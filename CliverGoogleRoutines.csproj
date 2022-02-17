@@ -8,33 +8,16 @@
 	  <Copyright>Sergey Stoyan</Copyright>
 	  <Authors>Sergey Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>1.1.0</Version>
+	  <Version>1.2.0</Version>
 	  <Title>Cross-platform routines needed in the most applications.</Title>
 	  <PackageProjectUrl>https://github.com/sergeystoyan/CliverGoogleRoutines</PackageProjectUrl>
-	  <Description>
-		  
-	  </Description>
+	  <Description>	  </Description>
 	  <PackageTags>google API</PackageTags>
 	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	  <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	  <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
 	  <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
-	
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-		<DefineConstants></DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-		<DefineConstants>TRACE;THREAD_LOG_IS_DEFAULT1</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-		<DefineConstants>TRACE;THREAD_LOG_IS_DEFAULT1</DefineConstants>
-	</PropertyGroup>
 
 	<PropertyGroup>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -47,13 +30,14 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.55.0.2601" />
     <PackageReference Include="Google.Apis.Gmail.v1" Version="1.55.0.2510" />
+    <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.56.0.1869" />
     <PackageReference Include="Google.Apis.Script.v1" Version="1.55.0.2555" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.5.21301.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CliverRoutines\CliverRoutines.csproj" />
+    <ProjectReference Include="..\PdfDocumentParser\CliverRoutines\CliverRoutines.csproj" />
   </ItemGroup>
 
 </Project>

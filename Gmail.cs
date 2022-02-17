@@ -18,48 +18,29 @@ using System.Net.Http;
 
 namespace Cliver
 {
-    public class Gmail : IDisposable
+    public class Gmail : GoogleService<GmailService>
     {
-        ~Gmail()
-        {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            lock (this)
-            {
-                if (gmailService != null)
-                {
-                    gmailService.Dispose();
-                    gmailService = null;
-                }
-            }
-        }
-
         public Gmail(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
         {
-            UserCredential credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
-            gmailService = new GmailService(new BaseClientService.Initializer
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
+            service = new GmailService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
-            });
+            }); 
         }
 
         public Gmail(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
         {
-            CredentialDir = credentialDir != null ? credentialDir : Log.AppCompanyUserDataDir + "\\gmailCredential";
-            UserCredential credential = GoogleRoutines.GetCredential(applicationName, scopes, CredentialDir, clientSecretFile);
-            gmailService = new GmailService(new BaseClientService.Initializer
+            if (credentialDir == null)
+                credentialDir = Log.AppCompanyUserDataDir + "\\gmailCredential";
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
+            service = new GmailService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
             });
         }
-        GmailService gmailService;
-
-        public readonly string CredentialDir;
 
         public class SearchFilter
         {
@@ -175,7 +156,7 @@ namespace Cliver
             Google.Apis.Util.Repeatable<string> labelIds = searchFilter.LabelIds != null ? new Google.Apis.Util.Repeatable<string>(searchFilter.LabelIds) : null;
             do
             {
-                UsersResource.MessagesResource.ListRequest request = gmailService.Users.Messages.List(searchFilter.UserId);
+                UsersResource.MessagesResource.ListRequest request = service.Users.Messages.List(searchFilter.UserId);
                 request.LabelIds = labelIds;
                 request.Q = requestQ;
                 request.PageToken = pageToken;
@@ -203,11 +184,11 @@ namespace Cliver
                     m.Attachments = getAttachments(message.Payload);
                     ms.Add(m);
                 }
-                BatchRequest batchRequest = new BatchRequest(gmailService);
+                BatchRequest batchRequest = new BatchRequest(service);
                 foreach (var e in rr.Messages)
                 {
                     batchRequest.Queue<Google.Apis.Gmail.v1.Data.Message>(
-                      gmailService.Users.Messages.Get(searchFilter.UserId, e.Id),
+                      service.Users.Messages.Get(searchFilter.UserId, e.Id),
                       getMessage
                       );
                 }
@@ -266,7 +247,7 @@ namespace Cliver
 
         public void DownloadAttachment(Message message, string attachmentId, string file)
         {
-            MessagePartBody mpb = gmailService.Users.Messages.Attachments.Get(message.UserId, message.Id, attachmentId).Execute();
+            MessagePartBody mpb = service.Users.Messages.Attachments.Get(message.UserId, message.Id, attachmentId).Execute();
             byte[] data = GetBytesFromBase64String(mpb.Data);
             File.WriteAllBytes(file, data);
         }
@@ -274,7 +255,7 @@ namespace Cliver
         public void AddLabels(Message message, List<string> addLabelIds, List<string> removeLabelIds)
         {
             var mmr = new ModifyMessageRequest { AddLabelIds = addLabelIds, RemoveLabelIds = removeLabelIds };
-            gmailService.Users.Messages.Modify(mmr, message.UserId, message.Id).Execute();
+            service.Users.Messages.Modify(mmr, message.UserId, message.Id).Execute();
         }
 
         public void SetRead(Message message)
@@ -284,7 +265,7 @@ namespace Cliver
 
         public IEnumerable<Google.Apis.Gmail.v1.Data.Label> GetLabels(string userId = Gmail.SearchFilter.OwnerMe)
         {
-            UsersResource.LabelsResource.ListRequest request = gmailService.Users.Labels.List(userId);
+            UsersResource.LabelsResource.ListRequest request = service.Users.Labels.List(userId);
             ListLabelsResponse rr = request.Execute();
             if (rr.Labels == null)
                 yield break;
@@ -295,7 +276,7 @@ namespace Cliver
 
         public Profile GetUserProfile(string userId = Gmail.SearchFilter.OwnerMe)
         {
-            UsersResource.GetProfileRequest r = gmailService.Users.GetProfile(userId);
+            UsersResource.GetProfileRequest r = service.Users.GetProfile(userId);
             return r.Execute();
         }
     }

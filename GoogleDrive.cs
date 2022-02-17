@@ -18,48 +18,29 @@ using System.Net.Http;
 
 namespace Cliver
 {
-    public class GoogleDrive : IDisposable
+    public class GoogleDrive : GoogleService<DriveService>
     {
-        ~GoogleDrive()
-        {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            lock (this)
-            {
-                if (driveService != null)
-                {
-                    driveService.Dispose();
-                    driveService = null;
-                }
-            }
-        }
-
         public GoogleDrive(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
         {
-            UserCredential credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
-            driveService = new DriveService(new BaseClientService.Initializer
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
+            service = new DriveService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
             });
         }
 
         public GoogleDrive(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
         {
-            CredentialDir = credentialDir != null ? credentialDir : Log.AppCompanyUserDataDir + "\\googleDriveCredential";
-            UserCredential credential = GoogleRoutines.GetCredential(applicationName, scopes, CredentialDir, clientSecretFile);
-            driveService = new DriveService(new BaseClientService.Initializer
+            if (credentialDir == null)
+                credentialDir = Log.AppCompanyUserDataDir + "\\googleDriveCredential";
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
+            service = new DriveService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
             });
         }
-        DriveService driveService;
-
-        public readonly string CredentialDir;
 
         const string folderMimeType = "application/vnd.google-apps.folder";
 
@@ -115,7 +96,7 @@ namespace Cliver
             string requestFields = "nextPageToken, files(" + getProperFields(fields) + ")"; //"nextPageToken, files(" + (fields == null ? "id, webViewLink, parents, name, isAppAuthorized, ownedByMe" : fields) + ")";//"*";// 
             do
             {
-                FilesResource.ListRequest request = driveService.Files.List();
+                FilesResource.ListRequest request = service.Files.List();
                 request.Q = requestQ;
                 request.IncludeItemsFromAllDrives = searchFilter.IncludeItemsFromAllDrives;
                 request.SupportsAllDrives = searchFilter.SupportsAllDrives;
@@ -161,7 +142,7 @@ namespace Cliver
 
         public Google.Apis.Drive.v3.Data.File GetObject(string objectId, string fields = "id, webViewLink")
         {
-            FilesResource.GetRequest getRequest = driveService.Files.Get(objectId);
+            FilesResource.GetRequest getRequest = service.Files.Get(objectId);
             getRequest.Fields = getProperFields(fields);
             try
             {
@@ -201,7 +182,7 @@ namespace Cliver
                 MimeType = folderMimeType,
                 Parents = parentFolderId != null ? new List<string> { parentFolderId } : null
             };
-            var request = driveService.Files.Create(f);
+            var request = service.Files.Create(f);
             request.Fields = getProperFields(fields);
             return request.Execute();
         }
@@ -273,7 +254,7 @@ namespace Cliver
                     Google.Apis.Drive.v3.Data.File f = fs.FirstOrDefault();
                     if (f != null)
                     {
-                        FilesResource.UpdateMediaUpload updateMediaUpload = driveService.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                        FilesResource.UpdateMediaUpload updateMediaUpload = service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
                         updateMediaUpload.Fields = getProperFields(fields);
                         Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
                         if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
@@ -288,7 +269,7 @@ namespace Cliver
                     {
                         folder.Id
                     };
-                    FilesResource.CreateMediaUpload createMediaUpload = driveService.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                    FilesResource.CreateMediaUpload createMediaUpload = service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
                     createMediaUpload.Fields = getProperFields(fields);
                     Google.Apis.Upload.IUploadProgress uploadProgress = createMediaUpload.Upload();
                     if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
@@ -311,7 +292,7 @@ namespace Cliver
 
         public void DownloadFile(string fileId, string localFile)
         {
-            FilesResource.GetRequest request = driveService.Files.Get(fileId);
+            FilesResource.GetRequest request = service.Files.Get(fileId);
             using (MemoryStream ms = new MemoryStream())
             {
                 request.Download(ms);
@@ -343,7 +324,7 @@ namespace Cliver
         public List<string> RemoveObjects(List<string> objectIds)
         {
             List<string> errors = new List<string>();
-            BatchRequest batchRequest = new BatchRequest(driveService);
+            BatchRequest batchRequest = new BatchRequest(service);
             void callback(Google.Apis.Drive.v3.Data.File content, RequestError error, int index, HttpResponseMessage message)
             {
                 if (error != null)
@@ -355,7 +336,7 @@ namespace Cliver
             };
             foreach (string oi in objectIds)
             {
-                FilesResource.UpdateRequest updateRequest = driveService.Files.Update(file, oi);
+                FilesResource.UpdateRequest updateRequest = service.Files.Update(file, oi);
                 batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(updateRequest, callback);
             }
             batchRequest.ExecuteAsync().Wait();
@@ -373,7 +354,7 @@ namespace Cliver
             {
                 Name = name2
             };
-            FilesResource.UpdateRequest updateRequest = driveService.Files.Update(file, objectId);
+            FilesResource.UpdateRequest updateRequest = service.Files.Update(file, objectId);
             return updateRequest.Execute();
         }
 
@@ -382,7 +363,7 @@ namespace Cliver
         {
             if (string.IsNullOrWhiteSpace(newParentIds))
                 throw new Exception("newParentIds cannot be empty.");
-            FilesResource.UpdateRequest updateRequest = driveService.Files.Update(new Google.Apis.Drive.v3.Data.File(), objectId);
+            FilesResource.UpdateRequest updateRequest = service.Files.Update(new Google.Apis.Drive.v3.Data.File(), objectId);
             updateRequest.AddParents = newParentIds;
             if (removingParentIds == MoveAll)
             {
@@ -408,14 +389,14 @@ namespace Cliver
         public Permission TransferOwnership(string objectId, string newOwnerEmail)
         {
             Permission permission = new Permission { Type = "user", Role = "owner", EmailAddress = newOwnerEmail };
-            var createRequest = driveService.Permissions.Create(permission, objectId);
+            var createRequest = service.Permissions.Create(permission, objectId);
             createRequest.TransferOwnership = true;
             return createRequest.Execute();
         }
 
         public Google.Apis.Drive.v3.Data.File SetReadonly(string objectId, bool @readonly)
         {
-            FilesResource.UpdateRequest updateRequest = driveService.Files.Update(
+            FilesResource.UpdateRequest updateRequest = service.Files.Update(
                 new Google.Apis.Drive.v3.Data.File
                 {
                     ContentRestrictions = new List<ContentRestriction>{

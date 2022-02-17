@@ -18,31 +18,14 @@ using System.Net.Http;
 
 namespace Cliver
 {
-    public partial class GoogleScript : IDisposable
+    public partial class GoogleScript : GoogleService<ScriptService>
     {
-        ~GoogleScript()
-        {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            lock (this)
-            {
-                if (scriptService != null)
-                {
-                    scriptService.Dispose();
-                    scriptService = null;
-                }
-            }
-        }
-
         public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, IDataStore dataStore, string clientSecretFile = null)
         {
-            UserCredential credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
-            scriptService = new ScriptService(new BaseClientService.Initializer
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
+            service = new ScriptService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
             });
             ScriptId = scriptId;
@@ -50,18 +33,17 @@ namespace Cliver
 
         public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, string credentialDir = null, string clientSecretFile = null)
         {
-            CredentialDir = credentialDir != null ? credentialDir : Log.AppCompanyUserDataDir + "\\googleScriptCredential";
-            UserCredential credential = GoogleRoutines.GetCredential(applicationName, scopes, CredentialDir, clientSecretFile);
-            scriptService = new ScriptService(new BaseClientService.Initializer
+            if (credentialDir == null)
+                credentialDir = Log.AppCompanyUserDataDir + "\\googleScriptCredential";
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
+            service = new ScriptService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
             });
             ScriptId = scriptId;
         }
-        ScriptService scriptService;
 
-        public readonly string CredentialDir;
         public readonly string ScriptId;
 
         public object Run(string function, params object[] parameters)
@@ -76,7 +58,7 @@ namespace Cliver
                 DevMode = false,
 #endif
             };
-            ScriptsResource.RunRequest runRequest = scriptService.Scripts.Run(request, "AKfycbwONtX66jqAhHFTkVTyQ1xZr9iDzoPfuqGfQWjnJNf6-0OBN_MzdjvFpGNaqQ6ivJdWLw");
+            ScriptsResource.RunRequest runRequest = service.Scripts.Run(request, ScriptId);
             Operation operation = runRequest.Execute();
             if (operation.Error != null)
             {

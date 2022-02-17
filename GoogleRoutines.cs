@@ -21,6 +21,32 @@ namespace Cliver
 {
     public class GoogleRoutines
     {
+        public static Google.Apis.Oauth2.v2.Data.Userinfo GetUserInfo(UserCredential credential)
+        {
+            var oauthSerivce = new Google.Apis.Oauth2.v2.Oauth2Service(
+             new BaseClientService.Initializer()
+             {
+                 HttpClientInitializer = credential,
+                 ApplicationName = "OAuth 2.0 Sample",
+             });
+
+            return oauthSerivce.Userinfo.Get().Execute();
+        }
+
+        public static string GetUserInfo2(UserCredential credential)
+        {
+            System.Net.HttpWebRequest userinfoRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("https://www.googleapis.com/oauth2/v3/userinfo");
+            userinfoRequest.Method = "GET";
+            userinfoRequest.Headers.Add(string.Format("Authorization: Bearer {0}", credential.Token));
+            userinfoRequest.ContentType = "application/x-www-form-urlencoded";
+            userinfoRequest.Accept = "Accept=text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+            System.Net.WebResponse userinfoResponse = userinfoRequest.GetResponse();
+            using (StreamReader userinfoResponseReader = new StreamReader(userinfoResponse.GetResponseStream()))
+            {
+                return userinfoResponseReader.ReadToEnd();
+            }
+        }
+
         public static UserCredential GetCredential(string applicationName, IEnumerable<string> scopes, out string credentialDir, string clientSecretFile)
         {
             string cd = null;
@@ -149,7 +175,7 @@ namespace Cliver
     {
         public GoogleDataStore(Settings settings, string fieldName)
         {
-            this.settings = settings;
+            Settings = settings;
             fieldInfo = settings.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
             if (fieldInfo == null)
                 throw new Exception("Field '" + fieldName + " could not be found.");
@@ -164,7 +190,7 @@ namespace Cliver
                 fieldInfo.SetValue(settings, keys2value);
             }
         }
-        readonly Settings settings;
+        public readonly Settings Settings;
         readonly FieldInfo fieldInfo;
         readonly Dictionary<string, object> keys2value = null;
 
@@ -173,7 +199,7 @@ namespace Cliver
             Task t = new Task(() =>
             {
                 keys2value.Clear();
-                settings.Save();
+                Settings.Save();
             });
             t.Start();
             return t;
@@ -184,7 +210,7 @@ namespace Cliver
             Task t = new Task(() =>
             {
                 keys2value.Remove(key);
-                settings.Save();
+                Settings.Save();
             });
             t.Start();
             return t;
@@ -207,7 +233,7 @@ namespace Cliver
             Task t = new Task(() =>
             {
                 keys2value[key] = value;
-                settings.Save();
+                Settings.Save();
             });
             t.Start();
             return t;
