@@ -1,8 +1,48 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <RepositoryUrl>https://github.com/sergeystoyan/CliverGoogleRoutines.git</RepositoryUrl>
+	  <PackageLicenseExpression>copyleft</PackageLicenseExpression>
+	  <Copyright>Sergey Stoyan</Copyright>
+	  <Authors>Sergey Stoyan</Authors>
+	  <Company>CliverSoft</Company>
+	  <Version>1.1.0</Version>
+	  <Title>Cross-platform routines needed in the most applications.</Title>
+	  <PackageProjectUrl>https://github.com/sergeystoyan/CliverGoogleRoutines</PackageProjectUrl>
+	  <Description>
+		  
+	  </Description>
+	  <PackageTags>google API</PackageTags>
+	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+	  <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	  <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+	  <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+		<DefineConstants></DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+		<DefineConstants>TRACE;THREAD_LOG_IS_DEFAULT1</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+		<AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+		<DefineConstants>TRACE;THREAD_LOG_IS_DEFAULT1</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DocumentationFile>c:\Users\serge\Documents\_PROJECTS\CliverRoutines\CliverRoutines.xml</DocumentationFile>
+	</PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.55.0.2601" />

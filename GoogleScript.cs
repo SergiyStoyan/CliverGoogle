@@ -18,7 +18,7 @@ using System.Net.Http;
 
 namespace Cliver
 {
-    partial class GoogleScript : IDisposable
+    public partial class GoogleScript : IDisposable
     {
         ~GoogleScript()
         {

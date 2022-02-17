@@ -81,7 +81,7 @@ namespace Cliver
 
             public const string OwnerMe = "me";
 
-            internal string GetRequest()
+            public string GetRequest()
             {
                 List<string> qConditions = new List<string>();
 
