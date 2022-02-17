@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.55.0.2601" />
+    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.55.0.2510" />
+    <PackageReference Include="Google.Apis.Script.v1" Version="1.55.0.2555" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.5.21301.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CliverRoutines\CliverRoutines.csproj" />
+  </ItemGroup>
+
+</Project>
