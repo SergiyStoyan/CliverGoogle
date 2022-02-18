@@ -8,7 +8,7 @@
 	  <Copyright>Sergey Stoyan</Copyright>
 	  <Authors>Sergey Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>1.2.0</Version>
+	  <Version>1.2.1</Version>
 	  <Title>Cross-platform routines needed in the most applications.</Title>
 	  <PackageProjectUrl>https://github.com/sergeystoyan/CliverGoogleRoutines</PackageProjectUrl>
 	  <Description>	  </Description>
@@ -30,7 +30,6 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.55.0.2601" />
     <PackageReference Include="Google.Apis.Gmail.v1" Version="1.55.0.2510" />
-    <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.56.0.1869" />
     <PackageReference Include="Google.Apis.Script.v1" Version="1.55.0.2555" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.5.21301.5" />

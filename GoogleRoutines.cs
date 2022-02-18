@@ -16,36 +16,55 @@ using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 
 namespace Cliver
 {
     public class GoogleRoutines
     {
-        public static Google.Apis.Oauth2.v2.Data.Userinfo GetUserInfo(UserCredential credential)
-        {
-            var oauthSerivce = new Google.Apis.Oauth2.v2.Oauth2Service(
-             new BaseClientService.Initializer()
-             {
-                 HttpClientInitializer = credential,
-                 ApplicationName = "OAuth 2.0 Sample",
-             });
+        //public static Google.Apis.Oauth2.v2.Data.Userinfo GetUserInfo(UserCredential credential/*, string applicationName*/)
+        //{
+        //    var oauthSerivce = new Google.Apis.Oauth2.v2.Oauth2Service(
+        //     new BaseClientService.Initializer()
+        //     {
+        //         HttpClientInitializer = credential,
+        //         //ApplicationName = "OAuth 2.0 Sample",
+        //     });
 
-            return oauthSerivce.Userinfo.Get().Execute();
+        //    return oauthSerivce.Userinfo.Get().Execute();
+        //}
+
+        public static string GetUserMainEmail(UserCredential credential)
+        {
+            JObject r = GetUserInfo(credential);
+            //if (r["errors"]?.Any() == true)
+            //    return null;
+            if (r["email"] != null)
+                return r["email"].ToString();
+            return null;
         }
 
-        public static string GetUserInfo2(UserCredential credential)
+        public static JObject GetUserInfo(UserCredential credential)
         {
-            System.Net.HttpWebRequest userinfoRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("https://www.googleapis.com/oauth2/v3/userinfo");
+            FormUrlEncodedContent c = new FormUrlEncodedContent(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("access_token", credential.Token.AccessToken) });
+            System.Net.HttpWebRequest userinfoRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("https://www.googleapis.com/oauth2/v3/userinfo?" + c.ReadAsStringAsync().Result);
             userinfoRequest.Method = "GET";
-            userinfoRequest.Headers.Add(string.Format("Authorization: Bearer {0}", credential.Token));
-            userinfoRequest.ContentType = "application/x-www-form-urlencoded";
-            userinfoRequest.Accept = "Accept=text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
             System.Net.WebResponse userinfoResponse = userinfoRequest.GetResponse();
             using (StreamReader userinfoResponseReader = new StreamReader(userinfoResponse.GetResponseStream()))
-            {
-                return userinfoResponseReader.ReadToEnd();
-            }
+                return JObject.Parse(userinfoResponseReader.ReadToEnd());
         }
+
+        //public static JObject GetUserInfo2(UserCredential credential)
+        //{
+        //    System.Net.HttpWebRequest userinfoRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("https://www.googleapis.com/oauth2/v3/userinfo");
+        //    userinfoRequest.Method = "GET";
+        //    userinfoRequest.Headers.Add(string.Format("Authorization: Bearer {0}", credential.Token.AccessToken));
+        //    userinfoRequest.ContentType = "application/x-www-form-urlencoded";
+        //    //userinfoRequest.Accept = "Accept=text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+        //    System.Net.WebResponse userinfoResponse = userinfoRequest.GetResponse();
+        //    using (StreamReader userinfoResponseReader = new StreamReader(userinfoResponse.GetResponseStream()))
+        //        return JObject.Parse(userinfoResponseReader.ReadToEnd());
+        //}
 
         public static UserCredential GetCredential(string applicationName, IEnumerable<string> scopes, out string credentialDir, string clientSecretFile)
         {
