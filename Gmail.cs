@@ -127,6 +127,7 @@ namespace Cliver
         {
             public string UserId;
             public string Id;
+            public string To;
             public string From;
             public string Date;
             public string Subject;
@@ -283,6 +284,48 @@ namespace Cliver
         public string GetUserMainEmail(string userId = Gmail.SearchFilter.OwnerMe)
         {
             return GetUserProfile(userId)?.EmailAddress;
+        }
+
+        public Google.Apis.Gmail.v1.Data.Message Send(Message message)
+        {
+            string rm = $"To: {message.To}\r\nSubject: {message.Subject}\r\nContent-Type: text/html;charset=utf-8\r\n\r\n{message.Body}";
+            return send(Base64UrlEncode(rm), message.UserId);
+        }
+
+        static public string Base64UrlEncode(string input)
+        {
+            var data = System.Text.Encoding.UTF8.GetBytes(input);
+            return Convert.ToBase64String(data).Replace("+", "-").Replace("/", "_").Replace("=", "");
+        }
+
+        Google.Apis.Gmail.v1.Data.Message send(string raw, string userId = Gmail.SearchFilter.OwnerMe)
+        {
+            Google.Apis.Gmail.v1.Data.Message m = new Google.Apis.Gmail.v1.Data.Message { Raw = raw };
+            UsersResource.MessagesResource.SendRequest request = service.Users.Messages.Send(m, userId);
+            return request.Execute();
+        }
+
+        public Google.Apis.Gmail.v1.Data.Message Send(System.Net.Mail.MailMessage message, string userId = Gmail.SearchFilter.OwnerMe)
+        {
+            System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            System.Reflection.Assembly assembly = typeof(System.Net.Mail.SmtpClient).Assembly;
+            Type mailWriterType = assembly.GetType("System.Net.Mail.MailWriter");
+            string raw;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                System.Reflection.ConstructorInfo mailWriterConstructor = mailWriterType.GetConstructor(flags, null, new[] { typeof(Stream) }, null);
+                object mailWriter = mailWriterConstructor.Invoke(new object[] { stream });
+                System.Reflection.MethodInfo sendMethod = typeof(System.Net.Mail.MailMessage).GetMethod("Send", flags);
+                sendMethod.Invoke(message, flags, null, new[] { mailWriter, true, true }, null);
+                stream.Seek(0, SeekOrigin.Begin);
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    raw = sr.ReadToEnd();
+                }
+                System.Reflection.MethodInfo closeMethod = mailWriter.GetType().GetMethod("Close", flags);
+                closeMethod.Invoke(mailWriter, flags, null, new object[] { }, null);
+            }
+            return send(raw, userId);
         }
     }
 }

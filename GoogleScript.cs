@@ -46,6 +46,9 @@ namespace Cliver
 
         public readonly string ScriptId;
 
+        public int RetryMaxCount = 3;
+        public int RetryDelayMss = 10000;
+
         public object Run(string function, params object[] parameters)
         {
             ExecutionRequest request = new ExecutionRequest
@@ -59,7 +62,22 @@ namespace Cliver
 #endif
             };
             ScriptsResource.RunRequest runRequest = service.Scripts.Run(request, ScriptId);
-            Operation operation = runRequest.Execute();
+            Operation operation = null;
+            for (int i = 0; ; i++)
+                try
+                {
+                    operation = runRequest.Execute();
+                    break;
+                }
+                catch (Google.GoogleApiException e)
+                {
+                    if (i >= RetryMaxCount)
+                        throw;
+                    if (e.Error?.Code != 500)
+                        throw;
+                    Log.Warning2("Retrying...", e);
+                    System.Threading.Thread.Sleep(RetryDelayMss);
+                }
             if (operation.Error != null)
             {
                 string message = "Server error: " + operation.Error.ToStringByJson();
