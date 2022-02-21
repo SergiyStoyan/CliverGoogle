@@ -27,7 +27,7 @@ namespace Cliver
             {
                 HttpClientInitializer = Credential,
                 ApplicationName = applicationName,
-            }); 
+            });
         }
 
         public Gmail(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
@@ -278,6 +278,11 @@ namespace Cliver
         {
             UsersResource.GetProfileRequest r = service.Users.GetProfile(userId);
             return r.Execute();
+        }
+
+        public string GetUserMainEmail(string userId = Gmail.SearchFilter.OwnerMe)
+        {
+            return GetUserProfile(userId)?.EmailAddress;
         }
     }
 }

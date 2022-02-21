@@ -22,6 +22,14 @@ namespace Cliver
 {
     public class GoogleRoutines
     {
+        static public string GetDocumentId(string documentUrl)
+        {
+            Match m = Regex.Match(documentUrl, @"^.*?/d/(.+?)(/|$)");
+            if (!m.Success)
+                throw new Exception("Could not parse ID from documentUrl:" + documentUrl);
+            return m.Groups[1].Value;
+        }
+
         //public static Google.Apis.Oauth2.v2.Data.Userinfo GetUserInfo(UserCredential credential/*, string applicationName*/)
         //{
         //    var oauthSerivce = new Google.Apis.Oauth2.v2.Oauth2Service(
