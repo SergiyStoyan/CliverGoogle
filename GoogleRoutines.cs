@@ -13,7 +13,7 @@ using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Google.Apis.Requests;
 using System.Text.RegularExpressions;
-using System.Net.Http;
+//using System.Net.Http;
 using System.Threading.Tasks;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
@@ -54,8 +54,9 @@ namespace Cliver
 
         public static JObject GetUserInfo(UserCredential credential)
         {
-            FormUrlEncodedContent c = new FormUrlEncodedContent(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("access_token", credential.Token.AccessToken) });
-            System.Net.HttpWebRequest userinfoRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("https://www.googleapis.com/oauth2/v3/userinfo?" + c.ReadAsStringAsync().Result);
+            //FormUrlEncodedContent c = new FormUrlEncodedContent(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("access_token", credential.Token.AccessToken) });
+            Dictionary<string, string> names2value = new Dictionary<string, string> { { "access_token", credential.Token.AccessToken } };
+            System.Net.HttpWebRequest userinfoRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("https://www.googleapis.com/oauth2/v3/userinfo?" + WebRoutines.GetUrlQuery(names2value));
             userinfoRequest.Method = "GET";
             System.Net.WebResponse userinfoResponse = userinfoRequest.GetResponse();
             using (StreamReader userinfoResponseReader = new StreamReader(userinfoResponse.GetResponseStream()))
