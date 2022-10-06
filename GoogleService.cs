@@ -12,10 +12,11 @@ using Google.Apis.Util.Store;
 using Google.Apis.Requests;
 using System.Text.RegularExpressions;
 using System.Net.Http;
+using Google.Apis.Services;
 
 namespace Cliver
 {
-    public partial class GoogleService<T> : IDisposable where T : class, IDisposable
+    public partial class GoogleService<T> : IDisposable where T : Google.Apis.Services.BaseClientService, new()
     {
         ~GoogleService()
         {
@@ -34,9 +35,46 @@ namespace Cliver
             }
         }
 
+        protected GoogleService(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
+        {
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
+            initialize(applicationName);
+        }
+
+        void initialize(string applicationName)
+        {
+            BaseClientService.Initializer serviceInitializer = new BaseClientService.Initializer
+            {
+                HttpClientInitializer = Credential,
+                ApplicationName = applicationName,
+            };
+            service = (T)Activator.CreateInstance(typeof(T), serviceInitializer);
+            Timeout = new TimeSpan(0, 0, 0, 300);
+        }
+
+        protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
+        {
+            if (credentialDir == null)
+                credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
+            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
+            initialize(applicationName);
+        }
+
         protected T service;
 
-        public UserCredential Credential { get; protected set; }
+        public UserCredential Credential { get; private set; }
+
+        public TimeSpan Timeout
+        {
+            get
+            {
+                return service.HttpClient.Timeout;
+            }
+            set
+            {
+                service.HttpClient.Timeout = value;
+            }
+        }
 
         public string GetCredentialDir()
         {

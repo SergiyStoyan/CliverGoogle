@@ -21,33 +21,21 @@ namespace Cliver
     public partial class GoogleScript : GoogleService<ScriptService>
     {
         public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, IDataStore dataStore, string clientSecretFile = null)
+            : base(applicationName, scopes, dataStore, clientSecretFile)
         {
-            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
-            service = new ScriptService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = Credential,
-                ApplicationName = applicationName,
-            });
             ScriptId = scriptId;
         }
 
         public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, string credentialDir = null, string clientSecretFile = null)
+            : base(applicationName, scopes, credentialDir, clientSecretFile)
         {
-            if (credentialDir == null)
-                credentialDir = Log.AppCompanyUserDataDir + "\\googleScriptCredential";
-            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
-            service = new ScriptService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = Credential,
-                ApplicationName = applicationName,
-            });
             ScriptId = scriptId;
         }
 
         public readonly string ScriptId;
 
-        public int RetryMaxCount = 3;
-        public int RetryDelayMss = 10000;
+        public int TryMaxCount = 3;
+        public int RetryDelaySecs = 20;
 
         public object Run(string function, params object[] parameters)
         {
@@ -63,7 +51,7 @@ namespace Cliver
             };
             ScriptsResource.RunRequest runRequest = service.Scripts.Run(request, ScriptId);
             Operation operation = null;
-            for (int i = 0; ; i++)
+            for (int tryCount = 1; ; tryCount++)
                 try
                 {
                     operation = runRequest.Execute();
@@ -71,12 +59,12 @@ namespace Cliver
                 }
                 catch (Google.GoogleApiException e)
                 {
-                    if (i >= RetryMaxCount)
+                    if (tryCount >= TryMaxCount)
                         throw;
                     if (e.Error?.Code != 500)
                         throw;
-                    Log.Warning2("Retrying...", e);
-                    System.Threading.Thread.Sleep(RetryDelayMss);
+                    Log.Warning2("Retrying (" + tryCount + ")... Sleeping " + RetryDelaySecs + " secs", e);
+                    System.Threading.Thread.Sleep(RetryDelaySecs * 1000);
                 }
             if (operation.Error != null)
             {

@@ -21,25 +21,13 @@ namespace Cliver
     public class GoogleSheet : GoogleService<SheetsService>
     {
         public GoogleSheet(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
+            : base(applicationName, scopes, dataStore, clientSecretFile)
         {
-            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
-            service = new SheetsService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = Credential,
-                ApplicationName = applicationName,
-            });
         }
 
         public GoogleSheet(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
+            : base(applicationName, scopes, credentialDir, clientSecretFile)
         {
-            if (credentialDir == null)
-                credentialDir = Log.AppCompanyUserDataDir + "\\googleSheetCredential";
-            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
-            service = new SheetsService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = Credential,
-                ApplicationName = applicationName,
-            });
         }
 
         public void test()
