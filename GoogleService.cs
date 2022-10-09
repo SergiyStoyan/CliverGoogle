@@ -16,7 +16,7 @@ using Google.Apis.Services;
 
 namespace Cliver
 {
-    public partial class GoogleService<T> : IDisposable where T : Google.Apis.Services.BaseClientService, new()
+    public abstract partial class GoogleService<T> : IDisposable where T : Google.Apis.Services.BaseClientService, new()
     {
         ~GoogleService()
         {
@@ -60,7 +60,7 @@ namespace Cliver
             initialize(applicationName);
         }
 
-        protected T service;
+        protected T service { get; private set; }
 
         public UserCredential Credential { get; private set; }
 
