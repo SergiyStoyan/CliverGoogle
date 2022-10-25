@@ -16,13 +16,20 @@ using System.Text.RegularExpressions;
 //using System.Net.Http;
 using System.Threading.Tasks;
 using System.Reflection;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace Cliver
 {
     public class GoogleDataStoreUserSettings : UserSettings, IDataStore
     {
-        public Dictionary<string, object> Keys2value = null;
+        [JsonProperty]
+        public string GoogleAccount { get; internal set; }///!!!TBD
+
+        /// <summary>
+        /// (!)This object is a cache storage by GraphServiceClient and must not be accessed from outside MicrosoftDataStoreUserSettings class.
+        /// </summary>
+        [JsonProperty]
+        internal Dictionary<string, object> Keys2value = null;
 
         protected override void Loaded()
         {

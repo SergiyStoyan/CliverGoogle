@@ -120,24 +120,25 @@ namespace Cliver
                 {
                     List<string> ss = credential.Token.Scope.Split(' ').ToList();
                     ss.AddRange(s2s);
-                    //credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    //    clientSecretsStream: stream,
-                    //    scopes: ss,
-                    //    user: applicationName,
-                    //    taskCancellationToken: System.Threading.CancellationToken.None,
-                    //    dataStore: dataStore
-                    //    ).Result;
-                    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new GoogleAuthorizationCodeFlow.Initializer
-                    {
-                        ClientSecretsStream = stream,
-                        IncludeGrantedScopes = true
-                    },
+                    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                        new GoogleAuthorizationCodeFlow.Initializer
+                        {
+                            ClientSecretsStream = stream,
+                            IncludeGrantedScopes = true
+                        },
                         scopes: ss,
                         user: applicationName,
                         taskCancellationToken: System.Threading.CancellationToken.None,
                         dataStore: dataStore
-                        ).Result;
+                    ).Result;
                 }
+            }
+
+            GoogleDataStoreUserSettings settings = dataStore as GoogleDataStoreUserSettings;
+            if (settings != null && settings.GoogleAccount != credential.UserId)
+            {
+                settings.GoogleAccount = credential.UserId;
+                settings.Save();
             }
             return credential;
         }
