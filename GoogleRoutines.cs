@@ -120,151 +120,27 @@ namespace Cliver
                 {
                     List<string> ss = credential.Token.Scope.Split(' ').ToList();
                     ss.AddRange(s2s);
-                    //credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    //    clientSecretsStream: stream,
-                    //    scopes: ss,
-                    //    user: applicationName,
-                    //    taskCancellationToken: System.Threading.CancellationToken.None,
-                    //    dataStore: dataStore
-                    //    ).Result;
-                    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new GoogleAuthorizationCodeFlow.Initializer
-                    {
-                        ClientSecretsStream = stream,
-                        IncludeGrantedScopes = true
-                    },
+                    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                        new GoogleAuthorizationCodeFlow.Initializer
+                        {
+                            ClientSecretsStream = stream,
+                            IncludeGrantedScopes = true
+                        },
                         scopes: ss,
                         user: applicationName,
                         taskCancellationToken: System.Threading.CancellationToken.None,
                         dataStore: dataStore
-                        ).Result;
+                    ).Result;
                 }
             }
-            return credential;
-        }
-    }
 
-    public class GoogleDataStoreUserSettings : UserSettings, IDataStore
-    {
-        public Dictionary<string, object> Keys2value = null;
-
-        protected override void Loaded()
-        {
-            if (Keys2value == null)
-                Keys2value = new Dictionary<string, object>();
-        }
-
-        public Task ClearAsync()
-        {
-            Task t = new Task(() =>
+            GoogleDataStoreUserSettings settings = dataStore as GoogleDataStoreUserSettings;
+            if (settings != null && settings.GoogleAccount != credential.UserId)
             {
-                Keys2value.Clear();
-                Save();
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task DeleteAsync<T>(string key)
-        {
-            Task t = new Task(() =>
-            {
-                Keys2value.Remove(key);
-                Save();
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task<T> GetAsync<T>(string key)
-        {
-            Task<T> t = new Task<T>(() =>
-            {
-                if (Keys2value.TryGetValue(key, out object value))
-                    return (T)value;
-                return default(T);
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task StoreAsync<T>(string key, T value)
-        {
-            Task t = new Task(() =>
-            {
-                Keys2value[key] = value;
-                Save();
-            });
-            t.Start();
-            return t;
-        }
-    }
-
-    public class GoogleDataStore : IDataStore
-    {
-        public GoogleDataStore(Settings settings, string fieldName)
-        {
-            Settings = settings;
-            fieldInfo = settings.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (fieldInfo == null)
-                throw new Exception("Field '" + fieldName + " could not be found.");
-            Type fieldType = typeof(Dictionary<string, object>);
-            if (fieldInfo.FieldType != fieldType)
-                throw new Exception("Field '" + fieldName + "' is not type " + fieldType);
-            keys2value = (Dictionary<string, object>)fieldInfo.GetValue(settings);
-            //Convert.ChangeType(keys2value, fieldType);
-            if (keys2value == null)
-            {
-                keys2value = new Dictionary<string, object>();
-                fieldInfo.SetValue(settings, keys2value);
+                settings.GoogleAccount = credential.UserId;
+                settings.Save();
             }
-        }
-        public readonly Settings Settings;
-        readonly FieldInfo fieldInfo;
-        readonly Dictionary<string, object> keys2value = null;
-
-        public Task ClearAsync()
-        {
-            Task t = new Task(() =>
-            {
-                keys2value.Clear();
-                Settings.Save();
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task DeleteAsync<T>(string key)
-        {
-            Task t = new Task(() =>
-            {
-                keys2value.Remove(key);
-                Settings.Save();
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task<T> GetAsync<T>(string key)
-        {
-            Task<T> t = new Task<T>(() =>
-            {
-                if (keys2value.TryGetValue(key, out object value))
-                    return (T)value;
-                return default(T);
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task StoreAsync<T>(string key, T value)
-        {
-            Task t = new Task(() =>
-            {
-                keys2value[key] = value;
-                Settings.Save();
-            });
-            t.Start();
-            return t;
+            return credential;
         }
     }
 }
