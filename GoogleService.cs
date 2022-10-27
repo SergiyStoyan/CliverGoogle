@@ -37,8 +37,41 @@ namespace Cliver
 
         protected GoogleService(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
         {
+            if (clientSecretFile == null)
+                clientSecretFile = Log.AppDir + "\\" + DefaultClientSecretFile;
             Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
+
             initialize(applicationName);
+
+            {//setting GoogleAccount info
+                Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = Credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(Credential.UserId).Result;
+                if (tokenResponse.IssuedUtc.AddMinutes(1) > DateTime.UtcNow)
+                {
+                    string googleAccount;
+                    //Gmail gmail = this as Gmail;
+                    //if (gmail != null)
+                    //{
+                    //    var userProfile = gmail.GetUserProfile();
+                    //    googleAccount = userProfile.EmailAddress;
+                    //}
+                    //else
+                    //{
+                    googleAccount = GoogleRoutines.GetUserMainEmail(Credential);
+                    //}
+                    if (string.IsNullOrWhiteSpace(googleAccount))
+                        googleAccount = "<not available>";
+                    GoogleDataStoreUserSettings settings = dataStore as GoogleDataStoreUserSettings;
+                    if (settings != null)
+                    {
+                        settings.GoogleAccount = googleAccount;
+                        settings.Save();
+                    }
+                    else
+                    {
+                        dataStore.StoreAsync("_GoogleAccount", googleAccount);
+                    }
+                }
+            }
         }
 
         void initialize(string applicationName)
@@ -52,10 +85,14 @@ namespace Cliver
             Timeout = new TimeSpan(0, 0, 0, 300);
         }
 
+        public const string DefaultClientSecretFile = "googleClientSecret.json";
+
         protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
         {
             if (credentialDir == null)
                 credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
+            if (clientSecretFile == null)
+                clientSecretFile = Log.AppDir + "\\" + DefaultClientSecretFile;
             Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
             initialize(applicationName);
         }

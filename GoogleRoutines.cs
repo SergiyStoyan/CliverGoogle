@@ -90,18 +90,12 @@ namespace Cliver
 
         static UserCredential getCredential(string applicationName, IEnumerable<string> scopes, ref string credentialDir, string clientSecretFile)
         {
-            if (credentialDir == null)
-                credentialDir = Log.AppCompanyUserDataDir + "\\googleCredential";
-
             FileDataStore fileDataStore = new FileDataStore(credentialDir, true);
             return GetCredential(applicationName, scopes, fileDataStore, clientSecretFile);
         }
 
         public static UserCredential GetCredential(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile)
         {
-            if (clientSecretFile == null)
-                clientSecretFile = Log.AppDir + "\\googleClientSecret.json";
-
             UserCredential credential;
             using (var stream = new FileStream(clientSecretFile, FileMode.Open, FileAccess.Read))
             {

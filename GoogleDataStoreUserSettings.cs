@@ -5,15 +5,7 @@
 //********************************************************************************************
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Auth.OAuth2.Flows;
-using Google.Apis.Services;
 using Google.Apis.Util.Store;
-using Google.Apis.Requests;
-using System.Text.RegularExpressions;
-//using System.Net.Http;
 using System.Threading.Tasks;
 using System.Reflection;
 using Newtonsoft.Json;
@@ -23,10 +15,10 @@ namespace Cliver
     public class GoogleDataStoreUserSettings : UserSettings, IDataStore
     {
         [JsonProperty]
-        public string GoogleAccount { get; internal set; }///!!!TBD
+        public string GoogleAccount { get; internal set; }
 
         /// <summary>
-        /// (!)This object is a cache storage by GraphServiceClient and must not be accessed from outside MicrosoftDataStoreUserSettings class.
+        /// (!)This object is a cache storage by GoogleService and must not be accessed from outside.
         /// </summary>
         [JsonProperty]
         internal Dictionary<string, object> Keys2value = null;
