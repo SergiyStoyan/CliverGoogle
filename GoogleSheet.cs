@@ -33,7 +33,7 @@ namespace Cliver
         public void test()
         {
             AddFilterViewRequest addFilterViewRequest = new AddFilterViewRequest { Filter = new FilterView { Criteria = new Dictionary<string, FilterCriteria> { { "1", new FilterCriteria { Condition = new BooleanCondition { } } } } } };
-            SpreadsheetsResource.ValuesResource.GetRequest getRequest = service.Spreadsheets.Values.Get("1k-dLZFk4YmjX__3Yb9__A6JJojUPpNEE9CucZuyULSU", "Items!A1:C3");
+            SpreadsheetsResource.ValuesResource.GetRequest getRequest = Service.Spreadsheets.Values.Get("1k-dLZFk4YmjX__3Yb9__A6JJojUPpNEE9CucZuyULSU", "Items!A1:C3");
             //            SpreadsheetsResource.GetRequest getRequest = service.Spreadsheets.Get("1k-dLZFk4YmjX__3Yb9__A6JJojUPpNEE9CucZuyULSU");
             var response = getRequest.Execute();
         }

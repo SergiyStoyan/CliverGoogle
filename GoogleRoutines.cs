@@ -75,25 +75,6 @@ namespace Cliver
         //        return JObject.Parse(userinfoResponseReader.ReadToEnd());
         //}
 
-        public static UserCredential GetCredential(string applicationName, IEnumerable<string> scopes, out string credentialDir, string clientSecretFile)
-        {
-            string cd = null;
-            UserCredential uc = getCredential(applicationName, scopes, ref cd, clientSecretFile);
-            credentialDir = cd;
-            return uc;
-        }
-
-        public static UserCredential GetCredential(string applicationName, IEnumerable<string> scopes, string credentialDir, string clientSecretFile)
-        {
-            return getCredential(applicationName, scopes, ref credentialDir, clientSecretFile);
-        }
-
-        static UserCredential getCredential(string applicationName, IEnumerable<string> scopes, ref string credentialDir, string clientSecretFile)
-        {
-            FileDataStore fileDataStore = new FileDataStore(credentialDir, true);
-            return GetCredential(applicationName, scopes, fileDataStore, clientSecretFile);
-        }
-
         public static UserCredential GetCredential(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile)
         {
             UserCredential credential;

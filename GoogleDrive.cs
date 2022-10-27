@@ -84,7 +84,7 @@ namespace Cliver
             string requestFields = "nextPageToken, files(" + getProperFields(fields) + ")"; //"nextPageToken, files(" + (fields == null ? "id, webViewLink, parents, name, isAppAuthorized, ownedByMe" : fields) + ")";//"*";// 
             do
             {
-                FilesResource.ListRequest request = service.Files.List();
+                FilesResource.ListRequest request = Service.Files.List();
                 request.Q = requestQ;
                 request.IncludeItemsFromAllDrives = searchFilter.IncludeItemsFromAllDrives;
                 request.SupportsAllDrives = searchFilter.SupportsAllDrives;
@@ -130,7 +130,7 @@ namespace Cliver
 
         public Google.Apis.Drive.v3.Data.File GetObject(string objectId, string fields = "id, webViewLink")
         {
-            FilesResource.GetRequest getRequest = service.Files.Get(objectId);
+            FilesResource.GetRequest getRequest = Service.Files.Get(objectId);
             getRequest.Fields = getProperFields(fields);
             try
             {
@@ -170,7 +170,7 @@ namespace Cliver
                 MimeType = folderMimeType,
                 Parents = parentFolderId != null ? new List<string> { parentFolderId } : null
             };
-            var request = service.Files.Create(f);
+            var request = Service.Files.Create(f);
             request.Fields = getProperFields(fields);
             return request.Execute();
         }
@@ -242,7 +242,7 @@ namespace Cliver
                     Google.Apis.Drive.v3.Data.File f = fs.FirstOrDefault();
                     if (f != null)
                     {
-                        FilesResource.UpdateMediaUpload updateMediaUpload = service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                        FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
                         updateMediaUpload.Fields = getProperFields(fields);
                         Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
                         if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
@@ -257,7 +257,7 @@ namespace Cliver
                     {
                         folder.Id
                     };
-                    FilesResource.CreateMediaUpload createMediaUpload = service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                    FilesResource.CreateMediaUpload createMediaUpload = Service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
                     createMediaUpload.Fields = getProperFields(fields);
                     Google.Apis.Upload.IUploadProgress uploadProgress = createMediaUpload.Upload();
                     if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
@@ -280,7 +280,7 @@ namespace Cliver
 
         public void DownloadFile(string fileId, string localFile)
         {
-            FilesResource.GetRequest request = service.Files.Get(fileId);
+            FilesResource.GetRequest request = Service.Files.Get(fileId);
             using (MemoryStream ms = new MemoryStream())
             {
                 request.Download(ms);
@@ -312,7 +312,7 @@ namespace Cliver
         public List<string> RemoveObjects(List<string> objectIds)
         {
             List<string> errors = new List<string>();
-            BatchRequest batchRequest = new BatchRequest(service);
+            BatchRequest batchRequest = new BatchRequest(Service);
             void callback(Google.Apis.Drive.v3.Data.File content, RequestError error, int index, HttpResponseMessage message)
             {
                 if (error != null)
@@ -324,7 +324,7 @@ namespace Cliver
             };
             foreach (string oi in objectIds)
             {
-                FilesResource.UpdateRequest updateRequest = service.Files.Update(file, oi);
+                FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, oi);
                 batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(updateRequest, callback);
             }
             batchRequest.ExecuteAsync().Wait();
@@ -342,7 +342,7 @@ namespace Cliver
             {
                 Name = name2
             };
-            FilesResource.UpdateRequest updateRequest = service.Files.Update(file, objectId);
+            FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, objectId);
             return updateRequest.Execute();
         }
 
@@ -351,7 +351,7 @@ namespace Cliver
         {
             if (string.IsNullOrWhiteSpace(newParentIds))
                 throw new Exception("newParentIds cannot be empty.");
-            FilesResource.UpdateRequest updateRequest = service.Files.Update(new Google.Apis.Drive.v3.Data.File(), objectId);
+            FilesResource.UpdateRequest updateRequest = Service.Files.Update(new Google.Apis.Drive.v3.Data.File(), objectId);
             updateRequest.AddParents = newParentIds;
             if (removingParentIds == MoveAll)
             {
@@ -377,14 +377,14 @@ namespace Cliver
         public Permission TransferOwnership(string objectId, string newOwnerEmail)
         {
             Permission permission = new Permission { Type = "user", Role = "owner", EmailAddress = newOwnerEmail };
-            var createRequest = service.Permissions.Create(permission, objectId);
+            var createRequest = Service.Permissions.Create(permission, objectId);
             createRequest.TransferOwnership = true;
             return createRequest.Execute();
         }
 
         public Google.Apis.Drive.v3.Data.File SetReadonly(string objectId, bool @readonly)
         {
-            FilesResource.UpdateRequest updateRequest = service.Files.Update(
+            FilesResource.UpdateRequest updateRequest = Service.Files.Update(
                 new Google.Apis.Drive.v3.Data.File
                 {
                     ContentRestrictions = new List<ContentRestriction>{

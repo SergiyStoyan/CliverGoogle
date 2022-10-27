@@ -49,7 +49,7 @@ namespace Cliver
                 DevMode = false,
 #endif
             };
-            ScriptsResource.RunRequest runRequest = service.Scripts.Run(request, ScriptId);
+            ScriptsResource.RunRequest runRequest = Service.Scripts.Run(request, ScriptId);
             Operation operation = null;
             for (int tryCount = 1; ; tryCount++)
                 try

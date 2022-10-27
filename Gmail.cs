@@ -145,7 +145,7 @@ namespace Cliver
             Google.Apis.Util.Repeatable<string> labelIds = searchFilter.LabelIds != null ? new Google.Apis.Util.Repeatable<string>(searchFilter.LabelIds) : null;
             do
             {
-                UsersResource.MessagesResource.ListRequest request = service.Users.Messages.List(searchFilter.UserId);
+                UsersResource.MessagesResource.ListRequest request = Service.Users.Messages.List(searchFilter.UserId);
                 request.LabelIds = labelIds;
                 request.Q = requestQ;
                 request.PageToken = pageToken;
@@ -173,11 +173,11 @@ namespace Cliver
                     m.Attachments = getAttachments(message.Payload);
                     ms.Add(m);
                 }
-                BatchRequest batchRequest = new BatchRequest(service);
+                BatchRequest batchRequest = new BatchRequest(Service);
                 foreach (var e in rr.Messages)
                 {
                     batchRequest.Queue<Google.Apis.Gmail.v1.Data.Message>(
-                      service.Users.Messages.Get(searchFilter.UserId, e.Id),
+                      Service.Users.Messages.Get(searchFilter.UserId, e.Id),
                       getMessage
                       );
                 }
@@ -236,7 +236,7 @@ namespace Cliver
 
         public void DownloadAttachment(Message message, string attachmentId, string file)
         {
-            MessagePartBody mpb = service.Users.Messages.Attachments.Get(message.UserId, message.Id, attachmentId).Execute();
+            MessagePartBody mpb = Service.Users.Messages.Attachments.Get(message.UserId, message.Id, attachmentId).Execute();
             byte[] data = GetBytesFromBase64String(mpb.Data);
             File.WriteAllBytes(file, data);
         }
@@ -244,7 +244,7 @@ namespace Cliver
         public void AddLabels(Message message, List<string> addLabelIds, List<string> removeLabelIds)
         {
             var mmr = new ModifyMessageRequest { AddLabelIds = addLabelIds, RemoveLabelIds = removeLabelIds };
-            service.Users.Messages.Modify(mmr, message.UserId, message.Id).Execute();
+            Service.Users.Messages.Modify(mmr, message.UserId, message.Id).Execute();
         }
 
         public void SetRead(Message message)
@@ -254,7 +254,7 @@ namespace Cliver
 
         public IEnumerable<Google.Apis.Gmail.v1.Data.Label> GetLabels(string userId = Gmail.SearchFilter.OwnerMe)
         {
-            UsersResource.LabelsResource.ListRequest request = service.Users.Labels.List(userId);
+            UsersResource.LabelsResource.ListRequest request = Service.Users.Labels.List(userId);
             ListLabelsResponse rr = request.Execute();
             if (rr.Labels == null)
                 yield break;
@@ -265,7 +265,7 @@ namespace Cliver
 
         public Profile GetUserProfile(string userId = Gmail.SearchFilter.OwnerMe)
         {
-            UsersResource.GetProfileRequest r = service.Users.GetProfile(userId);
+            UsersResource.GetProfileRequest r = Service.Users.GetProfile(userId);
             return r.Execute();
         }
 
@@ -289,7 +289,7 @@ namespace Cliver
         Google.Apis.Gmail.v1.Data.Message send(string raw, string userId = Gmail.SearchFilter.OwnerMe)
         {
             Google.Apis.Gmail.v1.Data.Message m = new Google.Apis.Gmail.v1.Data.Message { Raw = raw };
-            UsersResource.MessagesResource.SendRequest request = service.Users.Messages.Send(m, userId);
+            UsersResource.MessagesResource.SendRequest request = Service.Users.Messages.Send(m, userId);
             return request.Execute();
         }
 

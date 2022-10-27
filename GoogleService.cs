@@ -38,91 +38,135 @@ namespace Cliver
         protected GoogleService(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
         {
             if (clientSecretFile == null)
-                clientSecretFile = Log.AppDir + "\\" + DefaultClientSecretFile;
-            Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
+                clientSecretFile = Log.AppDir + "\\" + "googleClientSecret.json";
+            ApplicationName = applicationName;
+            Scopes = scopes;
+            this.dataStore = dataStore;
+            ClientSecretFile = clientSecretFile;
+        }
+        public readonly string ApplicationName;
+        public readonly IEnumerable<string> Scopes;
+        readonly IDataStore dataStore;
+        public readonly string ClientSecretFile;
 
-            //!!!consider moving all the long actions out of the constructor!
-            initialize(applicationName);
+        T createService()
+        {
+            lock (this)
+            {
 
-            {//setting GoogleAccount info
-                Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = Credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(Credential.UserId).Result;
-                if (tokenResponse.IssuedUtc.AddMinutes(1) > DateTime.UtcNow)
+
+                return service;
+            }
+        }
+
+        protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
+            : this(applicationName, scopes, createFileDataStore(credentialDir), clientSecretFile)
+        { }
+        static FileDataStore createFileDataStore(string credentialDir)
+        {
+            if (credentialDir == null)
+                credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
+            return new FileDataStore(credentialDir, true);
+        }
+
+        void initialize()
+        {
+            lock (this)
+            {
+                if (dataStore.GetAsync<object>(ApplicationName/*!!!actually it is credential.UserId which most likely is obtained from the server, not from ApplicationName*/).Result == null)
+                    OnInteractiveAuthentication?.Invoke();
+
+                credential = GoogleRoutines.GetCredential(ApplicationName, Scopes, dataStore, ClientSecretFile);
+
+                BaseClientService.Initializer serviceInitializer = new BaseClientService.Initializer
                 {
-                    string googleAccount = null;
-                    try
+                    HttpClientInitializer = credential,
+                    ApplicationName = ApplicationName,
+                };
+                service = (T)Activator.CreateInstance(typeof(T), serviceInitializer);
+                service.HttpClient.Timeout = new TimeSpan(0, 0, 0, 300);
+
+                {//setting GoogleAccount info
+                    Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(credential.UserId).Result;
+                    if (tokenResponse.IssuedUtc.AddMinutes(1) > DateTime.UtcNow)
                     {
-                        Gmail gmail = this as Gmail;
-                        if (gmail != null)//it requires less permission scopes
+                        try
                         {
-                            var userProfile = gmail.GetUserProfile();
-                            googleAccount = userProfile.EmailAddress;
+                            Gmail gmail = this as Gmail;
+                            if (gmail != null)//requires less permission scopes than the other services
+                            {
+                                var userProfile = gmail.GetUserProfile();
+                                googleAccount = userProfile.EmailAddress;
+                            }
+                            else//requires these scopes: "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email" 
+                            {
+                                googleAccount = GoogleRoutines.GetUserMainEmail(credential);
+                            }
                         }
-                        else//it needs these scopes: "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email" 
+                        catch (Exception e)
                         {
-                            googleAccount = GoogleRoutines.GetUserMainEmail(Credential);
+                            Log.Error("Could not get the google account info. Make sure that the respective permission scopes are provided.", e);
+                            googleAccount = "<not available>";
+                        }
+                        GoogleDataStoreUserSettings settings = credential.Flow.DataStore as GoogleDataStoreUserSettings;
+                        if (settings != null)
+                        {
+                            settings.GoogleAccount = googleAccount;
+                            settings.Save();
+                        }
+                        else
+                        {
+                            credential.Flow.DataStore.StoreAsync("_GoogleAccount", googleAccount).Wait();
                         }
                     }
-                    catch (Exception e)
-                    {
-                        Log.Error("Could not get UserInfo. Make sure that the respective permission scopes are provided.", e);
-                    }
-                    if (string.IsNullOrWhiteSpace(googleAccount))
-                        googleAccount = "<not available>";
-                    GoogleDataStoreUserSettings settings = dataStore as GoogleDataStoreUserSettings;
-                    if (settings != null)
-                    {
-                        settings.GoogleAccount = googleAccount;
-                        settings.Save();
-                    }
-                    else
-                    {
-                        dataStore.StoreAsync("_GoogleAccount", googleAccount).Wait();
-                    }
-                    GoogleAccount = googleAccount;
                 }
             }
         }
 
-        void initialize(string applicationName)
+        public Action OnInteractiveAuthentication = null;
+
+        protected T Service
         {
-            BaseClientService.Initializer serviceInitializer = new BaseClientService.Initializer
+            get
             {
-                HttpClientInitializer = Credential,
-                ApplicationName = applicationName,
-            };
-            service = (T)Activator.CreateInstance(typeof(T), serviceInitializer);
-            Timeout = new TimeSpan(0, 0, 0, 300);
+                if (service == null)
+                    initialize();
+                return service;
+            }
         }
+        T service;
 
-        public const string DefaultClientSecretFile = "googleClientSecret.json";
-
-        protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
+        public UserCredential Credential
         {
-            if (credentialDir == null)
-                credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
-            if (clientSecretFile == null)
-                clientSecretFile = Log.AppDir + "\\" + DefaultClientSecretFile;
-
-            //!!!consider moving all the long actions out of the constructor!
-            Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
-            initialize(applicationName);
+            get
+            {
+                if (credential == null)
+                    initialize();
+                return credential;
+            }
         }
+        UserCredential credential;
 
-        protected T service { get; private set; }
-
-        public UserCredential Credential { get; private set; }
-
-        public string GoogleAccount { get; private set; }
+        public string GoogleAccount
+        {
+            get
+            {
+                if (googleAccount == null)
+                    initialize();
+                return googleAccount;
+            }
+        }
+        string googleAccount;
 
         public TimeSpan Timeout
         {
             get
             {
-                return service.HttpClient.Timeout;
+                return Service.HttpClient.Timeout;
             }
             set
             {
-                service.HttpClient.Timeout = value;
+                Service.HttpClient.Timeout = value;
             }
         }
 
