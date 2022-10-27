@@ -14,48 +14,67 @@ namespace Cliver
 {
     public class GoogleDataStoreUserSettings : UserSettings, IDataStore
     {
+        /// <summary>
+        /// The user's google account chosen latest.
+        /// </summary>
         [JsonProperty]
         public string GoogleAccount { get; internal set; }
 
         /// <summary>
-        /// (!)This object is a cache storage by GoogleService and must not be accessed from outside.
+        /// (!)This object is a cache storage by Google and must not be accessed from outside.
         /// </summary>
         [JsonProperty]
-        internal Dictionary<string, object> Keys2value = null;
+        protected Dictionary<string, object> GoogleCache = new Dictionary<string, object>();
 
-        protected override void Loaded()
+        public void ClearGoogleAccount()
         {
-            if (Keys2value == null)
-                Keys2value = new Dictionary<string, object>();
+            ClearAsync().Wait();
+            GoogleAccount = null;
         }
 
+        /// <summary>
+        /// Used by Google.Apis 
+        /// </summary>
+        /// <returns></returns>
         public Task ClearAsync()
         {
             Task t = new Task(() =>
             {
-                Keys2value.Clear();
+                GoogleCache.Clear();
                 Save();
             });
             t.Start();
             return t;
         }
 
+        /// <summary>
+        /// Used by Google.Apis 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public Task DeleteAsync<T>(string key)
         {
             Task t = new Task(() =>
             {
-                Keys2value.Remove(key);
+                GoogleCache.Remove(key);
                 Save();
             });
             t.Start();
             return t;
         }
 
+        /// <summary>
+        /// Used by Google.Apis 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public Task<T> GetAsync<T>(string key)
         {
             Task<T> t = new Task<T>(() =>
             {
-                if (Keys2value.TryGetValue(key, out object value))
+                if (GoogleCache.TryGetValue(key, out object value))
                     return (T)value;
                 return default(T);
             });
@@ -63,11 +82,18 @@ namespace Cliver
             return t;
         }
 
+        /// <summary>
+        /// Used by Google.Apis 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public Task StoreAsync<T>(string key, T value)
         {
             Task t = new Task(() =>
             {
-                Keys2value[key] = value;
+                GoogleCache[key] = value;
                 Save();
             });
             t.Start();

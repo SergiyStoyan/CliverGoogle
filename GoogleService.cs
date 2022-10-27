@@ -41,23 +41,31 @@ namespace Cliver
                 clientSecretFile = Log.AppDir + "\\" + DefaultClientSecretFile;
             Credential = GoogleRoutines.GetCredential(applicationName, scopes, dataStore, clientSecretFile);
 
+            //!!!consider moving all the long actions out of the constructor!
             initialize(applicationName);
 
             {//setting GoogleAccount info
                 Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = Credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(Credential.UserId).Result;
                 if (tokenResponse.IssuedUtc.AddMinutes(1) > DateTime.UtcNow)
                 {
-                    string googleAccount;
-                    //Gmail gmail = this as Gmail;
-                    //if (gmail != null)
-                    //{
-                    //    var userProfile = gmail.GetUserProfile();
-                    //    googleAccount = userProfile.EmailAddress;
-                    //}
-                    //else
-                    //{
-                    googleAccount = GoogleRoutines.GetUserMainEmail(Credential);
-                    //}
+                    string googleAccount = null;
+                    try
+                    {
+                        Gmail gmail = this as Gmail;
+                        if (gmail != null)//it requires less permission scopes
+                        {
+                            var userProfile = gmail.GetUserProfile();
+                            googleAccount = userProfile.EmailAddress;
+                        }
+                        else//it needs these scopes: "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email" 
+                        {
+                            googleAccount = GoogleRoutines.GetUserMainEmail(Credential);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Could not get UserInfo. Make sure that the respective permission scopes are provided.", e);
+                    }
                     if (string.IsNullOrWhiteSpace(googleAccount))
                         googleAccount = "<not available>";
                     GoogleDataStoreUserSettings settings = dataStore as GoogleDataStoreUserSettings;
@@ -68,8 +76,9 @@ namespace Cliver
                     }
                     else
                     {
-                        dataStore.StoreAsync("_GoogleAccount", googleAccount);
+                        dataStore.StoreAsync("_GoogleAccount", googleAccount).Wait();
                     }
+                    GoogleAccount = googleAccount;
                 }
             }
         }
@@ -93,6 +102,8 @@ namespace Cliver
                 credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
             if (clientSecretFile == null)
                 clientSecretFile = Log.AppDir + "\\" + DefaultClientSecretFile;
+
+            //!!!consider moving all the long actions out of the constructor!
             Credential = GoogleRoutines.GetCredential(applicationName, scopes, credentialDir, clientSecretFile);
             initialize(applicationName);
         }
@@ -100,6 +111,8 @@ namespace Cliver
         protected T service { get; private set; }
 
         public UserCredential Credential { get; private set; }
+
+        public string GoogleAccount { get; private set; }
 
         public TimeSpan Timeout
         {

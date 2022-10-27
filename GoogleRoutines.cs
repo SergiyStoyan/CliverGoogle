@@ -127,13 +127,6 @@ namespace Cliver
                     ).Result;
                 }
             }
-
-            GoogleDataStoreUserSettings settings = dataStore as GoogleDataStoreUserSettings;
-            if (settings != null && settings.GoogleAccount != credential.UserId)
-            {
-                settings.GoogleAccount = credential.UserId;
-                settings.Save();
-            }
             return credential;
         }
     }
