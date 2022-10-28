@@ -16,6 +16,11 @@ using Google.Apis.Services;
 
 namespace Cliver
 {
+    /*
+     TBD:
+    - reliably hook OnInteractiveAuthentication() before interactively authorizing;
+     
+     */
     public abstract partial class GoogleService<T> : IDisposable where T : Google.Apis.Services.BaseClientService, new()
     {
         ~GoogleService()
@@ -49,16 +54,6 @@ namespace Cliver
         readonly IDataStore dataStore;
         public readonly string ClientSecretFile;
 
-        T createService()
-        {
-            lock (this)
-            {
-
-
-                return service;
-            }
-        }
-
         protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
             : this(applicationName, scopes, createFileDataStore(credentialDir), clientSecretFile)
         { }
@@ -73,7 +68,7 @@ namespace Cliver
         {
             lock (this)
             {
-                if (dataStore.GetAsync<object>(ApplicationName/*!!!actually it is credential.UserId which most likely is obtained from the server, not from ApplicationName*/).Result == null)
+                if (dataStore.GetAsync<object>(ApplicationName/*???check if credential.UserId is always ApplicationName*/).Result == null)
                     OnInteractiveAuthentication?.Invoke();
 
                 credential = GoogleRoutines.GetCredential(ApplicationName, Scopes, dataStore, ClientSecretFile);
@@ -88,7 +83,7 @@ namespace Cliver
 
                 {//setting GoogleAccount info
                     Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(credential.UserId).Result;
-                    if (tokenResponse.IssuedUtc.AddMinutes(1) > DateTime.UtcNow)
+                    if (tokenResponse.IssuedUtc.AddSeconds(30) > DateTime.UtcNow)
                     {
                         try
                         {
