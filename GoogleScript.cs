@@ -1,6 +1,6 @@
 //********************************************************************************************
-//Author: Sergey Stoyan
-//        sergey.stoyan@gmail.com
+//Author: Sergiy Stoyan
+//        systoyan@gmail.com
 //        http://www.cliversoft.com
 //********************************************************************************************
 using System;
@@ -20,17 +20,23 @@ namespace Cliver
 {
     public partial class GoogleScript : GoogleService<ScriptService>
     {
-        public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, IDataStore dataStore, string clientSecretFile = null)
-            : base(applicationName, scopes, dataStore, clientSecretFile)
+        public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, GoogleUserSettings googleUserSettings, string clientSecretFile = null)
+            : base(applicationName, scopes, googleUserSettings, clientSecretFile)
         {
             ScriptId = scriptId;
         }
 
-        public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, string credentialDir = null, string clientSecretFile = null)
-            : base(applicationName, scopes, credentialDir, clientSecretFile)
-        {
-            ScriptId = scriptId;
-        }
+        //public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, IDataStore dataStore, string clientSecretFile = null)
+        //    : base(applicationName, scopes, dataStore, clientSecretFile)
+        //{
+        //    ScriptId = scriptId;
+        //}
+
+        //public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, string credentialDir = null, string clientSecretFile = null)
+        //    : base(applicationName, scopes, credentialDir, clientSecretFile)
+        //{
+        //    ScriptId = scriptId;
+        //}
 
         public readonly string ScriptId;
 

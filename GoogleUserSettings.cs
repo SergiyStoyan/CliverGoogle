@@ -1,6 +1,6 @@
 //********************************************************************************************
-//Author: Sergey Stoyan
-//        sergey.stoyan@gmail.com
+//Author: Sergiy Stoyan
+//        systoyan@gmail.com
 //        http://www.cliversoft.com
 //********************************************************************************************
 using System;
@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace Cliver
 {
-    public class GoogleDataStoreUserSettings : UserSettings, IDataStore
+    public class GoogleUserSettings : UserSettings, IDataStore
     {
         /// <summary>
         /// The user's google account chosen latest.

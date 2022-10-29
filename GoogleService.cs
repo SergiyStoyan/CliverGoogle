@@ -1,6 +1,6 @@
 //********************************************************************************************
-//Author: Sergey Stoyan
-//        sergey.stoyan@gmail.com
+//Author: Sergiy Stoyan
+//        systoyan@gmail.com
 //        http://www.cliversoft.com
 //********************************************************************************************
 using System;
@@ -40,38 +40,40 @@ namespace Cliver
             }
         }
 
-        protected GoogleService(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
+        protected GoogleService(string applicationName, IEnumerable<string> scopes, /*IDataStore dataStore*/GoogleUserSettings googleUserSettings, string clientSecretFile = null)
         {
             if (clientSecretFile == null)
                 clientSecretFile = Log.AppDir + "\\" + "googleClientSecret.json";
             ApplicationName = applicationName;
             Scopes = scopes;
-            this.dataStore = dataStore;
+            //DataStore = dataStore;
+            GoogleUserSettings = googleUserSettings;
             ClientSecretFile = clientSecretFile;
         }
         public readonly string ApplicationName;
         public readonly IEnumerable<string> Scopes;
-        readonly IDataStore dataStore;
+        //public readonly IDataStore DataStore;
+        public readonly GoogleUserSettings GoogleUserSettings;
         public readonly string ClientSecretFile;
 
-        protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
-            : this(applicationName, scopes, createFileDataStore(credentialDir), clientSecretFile)
-        { }
-        static FileDataStore createFileDataStore(string credentialDir)
-        {
-            if (credentialDir == null)
-                credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
-            return new FileDataStore(credentialDir, true);
-        }
+        //protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
+        //    : this(applicationName, scopes, createFileDataStore(credentialDir), clientSecretFile)
+        //{ }
+        //static FileDataStore createFileDataStore(string credentialDir)
+        //{
+        //    if (credentialDir == null)
+        //        credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
+        //    return new FileDataStore(credentialDir, true);
+        //}
 
         void initialize()
         {
             lock (this)
             {
-                if (dataStore.GetAsync<object>(ApplicationName/*???check if credential.UserId is always ApplicationName*/).Result == null)
+                if (/*DataStore*/GoogleUserSettings.GetAsync<object>(ApplicationName/*???check if credential.UserId is always ApplicationName*/).Result == null)
                     OnInteractiveAuthentication?.Invoke();
 
-                credential = GoogleRoutines.GetCredential(ApplicationName, Scopes, dataStore, ClientSecretFile);
+                credential = GoogleRoutines.GetCredential(ApplicationName, Scopes, /*DataStore*/GoogleUserSettings, ClientSecretFile);
 
                 BaseClientService.Initializer serviceInitializer = new BaseClientService.Initializer
                 {
@@ -79,7 +81,6 @@ namespace Cliver
                     ApplicationName = ApplicationName,
                 };
                 service = (T)Activator.CreateInstance(typeof(T), serviceInitializer);
-                service.HttpClient.Timeout = new TimeSpan(0, 0, 0, 300);
 
                 {//setting GoogleAccount info
                     Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(credential.UserId).Result;
@@ -103,7 +104,7 @@ namespace Cliver
                             Log.Error("Could not get the google account info. Make sure that the respective permission scopes are provided.", e);
                             googleAccount = "<not available>";
                         }
-                        GoogleDataStoreUserSettings settings = credential.Flow.DataStore as GoogleDataStoreUserSettings;
+                        GoogleUserSettings settings = credential.Flow.DataStore as GoogleUserSettings;
                         if (settings != null)
                         {
                             settings.GoogleAccount = googleAccount;
@@ -163,18 +164,6 @@ namespace Cliver
             {
                 Service.HttpClient.Timeout = value;
             }
-        }
-
-        public string GetCredentialDir()
-        {
-            IDataStore ds = Credential.Flow.DataStore;
-            if (ds is FileDataStore)
-                return ((FileDataStore)ds).FolderPath;
-            if (ds is GoogleDataStoreUserSettings)
-                return ((GoogleDataStoreUserSettings)ds).__StorageDir;
-            if (ds is GoogleDataStore)
-                return ((GoogleDataStore)ds).Settings.__StorageDir;
-            return null;
         }
     }
 }

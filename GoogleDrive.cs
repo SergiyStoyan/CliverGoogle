@@ -1,6 +1,6 @@
 ﻿//********************************************************************************************
-//Author: Sergey Stoyan
-//        sergey.stoyan@gmail.com
+//Author: Sergiy Stoyan
+//        systoyan@gmail.com
 //        http://www.cliversoft.com
 //********************************************************************************************
 using System;
@@ -20,15 +20,20 @@ namespace Cliver
 {
     public class GoogleDrive : GoogleService<DriveService>
     {
-        public GoogleDrive(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
-            : base(applicationName, scopes, dataStore, clientSecretFile)
+        public GoogleDrive(string applicationName, IEnumerable<string> scopes, GoogleUserSettings googleUserSettings, string clientSecretFile = null)
+            : base(applicationName, scopes, googleUserSettings, clientSecretFile)
         {
         }
 
-        public GoogleDrive(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
-            : base(applicationName, scopes, credentialDir, clientSecretFile)
-        {
-        }
+        //public GoogleDrive(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
+        //    : base(applicationName, scopes, dataStore, clientSecretFile)
+        //{
+        //}
+
+        //public GoogleDrive(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
+        //    : base(applicationName, scopes, credentialDir, clientSecretFile)
+        //{
+        //}
 
         const string folderMimeType = "application/vnd.google-apps.folder";
 
