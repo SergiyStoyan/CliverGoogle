@@ -84,7 +84,7 @@ namespace Cliver
 
                 {//setting GoogleAccount info
                     Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(credential.UserId).Result;
-                    if (tokenResponse.IssuedUtc.AddSeconds(30) > DateTime.UtcNow)
+                    if (string.IsNullOrEmpty(googleAccount) || tokenResponse.IssuedUtc.AddSeconds(60) > DateTime.UtcNow)
                     {
                         try
                         {

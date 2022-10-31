@@ -9,6 +9,7 @@ using Google.Apis.Util.Store;
 using System.Threading.Tasks;
 using System.Reflection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Cliver
 {
@@ -24,7 +25,54 @@ namespace Cliver
         /// (!)This object is a cache storage by Google and must not be accessed from outside.
         /// </summary>
         [JsonProperty]
-        protected Dictionary<string, object> GoogleCache = new Dictionary<string, object>();
+        object GoogleCache;
+
+        Dictionary<string, object> googleCache;
+
+        /// <summary>
+        /// Set this object in the child class if the cache must be stored encrypted.
+        /// </summary>
+        virtual protected Endec2String Endec { get; } = null;
+
+        protected override void Loaded()
+        {
+            if (GoogleCache == null)
+            {
+                googleCache = new Dictionary<string, object>();
+                return;
+            }
+
+            if (Endec != null)
+            {
+                if (GoogleCache is string)
+                    googleCache = Endec.Decrypt<Dictionary<string, object>>((string)GoogleCache);
+                else
+                {
+                    if (GoogleCache is JObject)//if Endec was set recently
+                    {
+                        googleCache = ((JObject)GoogleCache).ToObject<Dictionary<string, object>>();
+                        Save();
+                    }
+                    else
+                        throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType());
+                }
+            }
+            else
+            {
+                if (GoogleCache is JObject)
+                    googleCache = ((JObject)GoogleCache).ToObject<Dictionary<string, object>>();
+                else
+                    throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType());
+            }
+        }
+
+        protected override void Saving()
+        {
+            if (Endec != null)
+                GoogleCache = Endec.Encrypt(googleCache);
+            else
+                GoogleCache = googleCache;
+        }
 
         public void ClearGoogleAccount()
         {
@@ -40,7 +88,7 @@ namespace Cliver
         {
             Task t = new Task(() =>
             {
-                GoogleCache.Clear();
+                googleCache.Clear();
                 Save();
             });
             t.Start();
@@ -57,7 +105,7 @@ namespace Cliver
         {
             Task t = new Task(() =>
             {
-                GoogleCache.Remove(key);
+                googleCache.Remove(key);
                 Save();
             });
             t.Start();
@@ -74,7 +122,7 @@ namespace Cliver
         {
             Task<T> t = new Task<T>(() =>
             {
-                if (GoogleCache.TryGetValue(key, out object value))
+                if (googleCache.TryGetValue(key, out object value))
                     return (T)value;
                 return default(T);
             });
@@ -93,7 +141,7 @@ namespace Cliver
         {
             Task t = new Task(() =>
             {
-                GoogleCache[key] = value;
+                googleCache[key] = value;
                 Save();
             });
             t.Start();
