@@ -13,6 +13,8 @@ using Newtonsoft.Json.Linq;
 
 namespace Cliver
 {
+    using GoogleCacheType = Dictionary<string, object>;
+
     public class GoogleUserSettings : UserSettings, IDataStore
     {
         /// <summary>
@@ -27,30 +29,35 @@ namespace Cliver
         [JsonProperty]
         object GoogleCache;
 
-        Dictionary<string, object> googleCache;
+        GoogleCacheType googleCache;
 
         /// <summary>
         /// Set this object in the child class if the cache must be stored encrypted.
         /// </summary>
-        virtual protected Endec2String Endec { get; } = null;
+        virtual protected StringEndec Endec { get; } = null;
 
         protected override void Loaded()
         {
             if (GoogleCache == null)
             {
-                googleCache = new Dictionary<string, object>();
+                googleCache = new GoogleCacheType();
                 return;
             }
 
             if (Endec != null)
             {
                 if (GoogleCache is string)
-                    googleCache = Endec.Decrypt<Dictionary<string, object>>((string)GoogleCache);
+                    googleCache = Endec.Decrypt<GoogleCacheType>((string)GoogleCache);
                 else
                 {
                     if (GoogleCache is JObject)//if Endec was set recently
                     {
-                        googleCache = ((JObject)GoogleCache).ToObject<Dictionary<string, object>>();
+                        googleCache = ((JObject)GoogleCache).ToObject<GoogleCacheType>();
+                        Save();
+                    }
+                    else if (GoogleCache is GoogleCacheType)//if Endec was set recently
+                    {
+                        googleCache = (GoogleCacheType)GoogleCache;
                         Save();
                     }
                     else
@@ -60,7 +67,9 @@ namespace Cliver
             else
             {
                 if (GoogleCache is JObject)
-                    googleCache = ((JObject)GoogleCache).ToObject<Dictionary<string, object>>();
+                    googleCache = ((JObject)GoogleCache).ToObject<GoogleCacheType>();
+                else if (GoogleCache is GoogleCacheType)
+                    googleCache = (GoogleCacheType)GoogleCache;
                 else
                     throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType());
             }
