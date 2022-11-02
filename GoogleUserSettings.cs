@@ -64,7 +64,7 @@ namespace Cliver
                 if (GoogleCache is GoogleCacheType)
                     googleCache = (GoogleCacheType)GoogleCache;
                 else
-                    throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType());
+                    throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType() + "\r\nConsider deleting the config file: " + __Info.File);
             }
         }
 

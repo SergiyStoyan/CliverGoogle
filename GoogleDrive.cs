@@ -179,6 +179,8 @@ namespace Cliver
             request.Fields = getProperFields(fields);
             return request.Execute();
         }
+        //replace GetFolder(string parentFolderId, string folderName, GettingMode gettingMode, string fields = "id, webViewLink")
+        //public Google.Apis.Drive.v3.Data.File GetFolder(string baseFolderId, string relativeFolderPath, GettingMode gettingMode, string fields = "id, webViewLink"){ }
 
         public Google.Apis.Drive.v3.Data.File GetFolder(string folderPath, GettingMode gettingMode, string fields = "id, webViewLink")
         {
@@ -228,6 +230,8 @@ namespace Cliver
             }
             return @object;
         }
+        //replace GetFile(string filePath, string fields = "id, webViewLink")
+        //public Google.Apis.Drive.v3.Data.File GetFile(string baseFolderId, string relativeFilePath, string fields = "id, webViewLink"){ }
 
         public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
@@ -282,6 +286,8 @@ namespace Cliver
                 mimeType = regKey.GetValue("Content Type").ToString();
             return mimeType;
         }
+        //replace UploadFile(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        //public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteBaseFolderId, string remoteRelativeFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink"){ }
 
         public void DownloadFile(string fileId, string localFile)
         {
@@ -313,6 +319,8 @@ namespace Cliver
             DownloadFile(file.Id, localFile);
             return file;
         }
+        //replace public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteFilePath, string localFile)
+        //public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteBaseFolderId, string remoteRelativeFilePath, string localFile){}
 
         public List<string> RemoveObjects(List<string> objectIds)
         {
