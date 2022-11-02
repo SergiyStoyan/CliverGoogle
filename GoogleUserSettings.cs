@@ -50,12 +50,7 @@ namespace Cliver
                     googleCache = Endec.Decrypt<GoogleCacheType>((string)GoogleCache);
                 else
                 {
-                    if (GoogleCache is JObject)//if Endec was set recently
-                    {
-                        googleCache = ((JObject)GoogleCache).ToObject<GoogleCacheType>();
-                        Save();
-                    }
-                    else if (GoogleCache is GoogleCacheType)//if Endec was set recently
+                    if (GoogleCache is GoogleCacheType)//if Endec was set recently
                     {
                         googleCache = (GoogleCacheType)GoogleCache;
                         Save();
@@ -66,9 +61,7 @@ namespace Cliver
             }
             else
             {
-                if (GoogleCache is JObject)
-                    googleCache = ((JObject)GoogleCache).ToObject<GoogleCacheType>();
-                else if (GoogleCache is GoogleCacheType)
+                if (GoogleCache is GoogleCacheType)
                     googleCache = (GoogleCacheType)GoogleCache;
                 else
                     throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType());
