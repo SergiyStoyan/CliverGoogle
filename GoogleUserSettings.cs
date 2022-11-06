@@ -64,7 +64,7 @@ namespace Cliver
                 if (GoogleCache is GoogleCacheType)
                     googleCache = (GoogleCacheType)GoogleCache;
                 else
-                    throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType() + "\r\nConsider deleting the config file: " + __Info.File);
+                    throw new Exception("GoogleCache is an unexpected type: " + GoogleCache.GetType() + "\r\nConsider removing the config file: " + __Info.File);
             }
         }
 
@@ -82,8 +82,13 @@ namespace Cliver
             GoogleAccount = null;
         }
 
+        public GoogleCacheType GetGoogleCacheClone()
+        {
+            return googleCache?.CreateCloneByJson();
+        }
+
         /// <summary>
-        /// Used by Google.Apis 
+        /// (!)Used by Google.Apis 
         /// </summary>
         /// <returns></returns>
         public Task ClearAsync()
@@ -98,7 +103,7 @@ namespace Cliver
         }
 
         /// <summary>
-        /// Used by Google.Apis 
+        /// (!)Used by Google.Apis 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
@@ -115,7 +120,7 @@ namespace Cliver
         }
 
         /// <summary>
-        /// Used by Google.Apis 
+        /// (!)Used by Google.Apis 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
@@ -133,7 +138,7 @@ namespace Cliver
         }
 
         /// <summary>
-        /// Used by Google.Apis 
+        /// (!)Used by Google.Apis 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="key"></param>
