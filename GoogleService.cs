@@ -87,7 +87,9 @@ namespace Cliver
 
                 {//setting GoogleAccount info
                     Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(credential.UserId).Result;
-                    if (tokenResponse.IssuedUtc.AddSeconds(10) > DateTime.UtcNow)//account was set right now and its name needs to be updated
+                    if (tokenResponse.IssuedUtc.AddSeconds(10) > DateTime.UtcNow
+                        || string.IsNullOrWhiteSpace(GoogleUserSettings.GoogleAccount)
+                        )//account was set right now and its name needs to be updated
                     {
                         try
                         {
@@ -105,7 +107,7 @@ namespace Cliver
                         catch (Exception e)
                         {
                             Log.Error("Could not get the google account info. Make sure that the respective permission scopes are provided.", e);
-                            //googleAccount = "<not available>";
+                            googleAccount = "<not available>";
                         }
                         //GoogleUserSettings settings = credential.Flow.DataStore as GoogleUserSettings;
                         //if (settings != null)
