@@ -8,8 +8,7 @@
 	  <Copyright>Sergiy Stoyan</Copyright>
 	  <Authors>Sergiy Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>3.3.4</Version>
-	  <Title>Cross-platform routines needed in the most applications.</Title>
+	  <Version>3.3.5</Version>
 	  <PackageProjectUrl>https://github.com/sergiystoyan/CliverGoogleRoutines</PackageProjectUrl>
 	  <Description>	  </Description>
 	  <PackageTags>google API</PackageTags>
@@ -37,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PdfDocumentParser\CliverRoutines\CliverRoutines.csproj" />
+    <ProjectReference Include="..\CliverRoutines\CliverRoutines.csproj" />
   </ItemGroup>
 
 </Project>
