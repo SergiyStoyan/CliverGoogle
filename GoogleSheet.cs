@@ -20,8 +20,7 @@ namespace Cliver
 {
     public class GoogleSheet : GoogleService<SheetsService>
     {
-        public GoogleSheet(string applicationName, IEnumerable<string> scopes, GoogleUserSettings googleUserSettings, string clientSecretFile = null)
-            : base(applicationName, scopes, googleUserSettings, clientSecretFile)
+        public GoogleSheet(GoogleSettings googleSettings) : base(googleSettings)
         {
         }
 

@@ -20,8 +20,7 @@ namespace Cliver
 {
     public partial class GoogleScript : GoogleService<ScriptService>
     {
-        public GoogleScript(string applicationName, IEnumerable<string> scopes, string scriptId, GoogleUserSettings googleUserSettings, string clientSecretFile = null)
-            : base(applicationName, scopes, googleUserSettings, clientSecretFile)
+        public GoogleScript(GoogleSettings googleSettings, string scriptId) : base(googleSettings)
         {
             ScriptId = scriptId;
         }

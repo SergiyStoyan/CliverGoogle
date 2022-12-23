@@ -15,8 +15,26 @@ namespace Cliver
 {
     using GoogleCacheType = Dictionary<string, object>;
 
-    public class GoogleUserSettings : UserSettings, IDataStore
+    abstract public class GoogleSettings : Settings, IDataStore
     {
+        /// <summary>
+        /// Application name which is passed to google.
+        /// </summary>
+        [JsonIgnore]
+        public virtual string ApplicationName { get; } = Assembly.GetEntryAssembly().GetProduct();
+
+        /// <summary>
+        /// Application's google client secret file of the app created on https://console.cloud.google.com/
+        /// </summary>
+        [JsonIgnore]
+        public virtual string ClientSecretFile { get; } = Log.AppDir + "\\" + "googleClientSecret.json";
+
+        /// <summary>
+        /// Permission scopes for the application.
+        /// </summary>
+        [JsonIgnore]
+        public abstract string[] Scopes { get; }
+
         /// <summary>
         /// The user's google account chosen latest.
         /// </summary>
@@ -150,75 +168,6 @@ namespace Cliver
             {
                 googleCache[key] = value;
                 Save();
-            });
-            t.Start();
-            return t;
-        }
-    }
-
-    public class GoogleDataStore : IDataStore
-    {
-        public GoogleDataStore(Settings settings, string fieldName)
-        {
-            Settings = settings;
-            fieldInfo = settings.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
-            if (fieldInfo == null)
-                throw new Exception("Field '" + fieldName + " could not be found.");
-            Type fieldType = typeof(Dictionary<string, object>);
-            if (fieldInfo.FieldType != fieldType)
-                throw new Exception("Field '" + fieldName + "' is not type " + fieldType);
-            keys2value = (Dictionary<string, object>)fieldInfo.GetValue(settings);
-            //Convert.ChangeType(keys2value, fieldType);
-            if (keys2value == null)
-            {
-                keys2value = new Dictionary<string, object>();
-                fieldInfo.SetValue(settings, keys2value);
-            }
-        }
-        public readonly Settings Settings;
-        readonly FieldInfo fieldInfo;
-        readonly Dictionary<string, object> keys2value = null;
-
-        public Task ClearAsync()
-        {
-            Task t = new Task(() =>
-            {
-                keys2value.Clear();
-                Settings.Save();
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task DeleteAsync<T>(string key)
-        {
-            Task t = new Task(() =>
-            {
-                keys2value.Remove(key);
-                Settings.Save();
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task<T> GetAsync<T>(string key)
-        {
-            Task<T> t = new Task<T>(() =>
-            {
-                if (keys2value.TryGetValue(key, out object value))
-                    return (T)value;
-                return default(T);
-            });
-            t.Start();
-            return t;
-        }
-
-        public Task StoreAsync<T>(string key, T value)
-        {
-            Task t = new Task(() =>
-            {
-                keys2value[key] = value;
-                Settings.Save();
             });
             t.Start();
             return t;

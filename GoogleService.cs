@@ -40,31 +40,11 @@ namespace Cliver
             }
         }
 
-        protected GoogleService(string applicationName, IEnumerable<string> scopes, /*IDataStore dataStore*/GoogleUserSettings googleUserSettings, string clientSecretFile = null)
+        protected GoogleService(GoogleSettings googleSettings)
         {
-            if (clientSecretFile == null)
-                clientSecretFile = Log.AppDir + "\\" + "googleClientSecret.json";
-            ApplicationName = applicationName;
-            Scopes = scopes;
-            //DataStore = dataStore;
-            GoogleUserSettings = googleUserSettings;
-            ClientSecretFile = clientSecretFile;
+            GoogleSettings = googleSettings;
         }
-        public readonly string ApplicationName;
-        public readonly IEnumerable<string> Scopes;
-        //public readonly IDataStore DataStore;
-        public readonly GoogleUserSettings GoogleUserSettings;
-        public readonly string ClientSecretFile;
-
-        //protected GoogleService(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
-        //    : this(applicationName, scopes, createFileDataStore(credentialDir), clientSecretFile)
-        //{ }
-        //static FileDataStore createFileDataStore(string credentialDir)
-        //{
-        //    if (credentialDir == null)
-        //        credentialDir = Log.AppCompanyUserDataDir + "\\" + typeof(T).Name + "Credential";
-        //    return new FileDataStore(credentialDir, true);
-        //}
+        public readonly GoogleSettings GoogleSettings;
 
         void initialize()
         {
@@ -73,22 +53,22 @@ namespace Cliver
                 if (service != null)
                     return;
 
-                if (/*DataStore*/GoogleUserSettings.GetAsync<object>(ApplicationName/*???check if credential.UserId is always ApplicationName*/).Result == null)
+                if (GoogleSettings.GetAsync<object>(GoogleSettings.ApplicationName/*???check if credential.UserId is always ApplicationName*/).Result == null)
                     OnInteractiveAuthentication?.Invoke();
 
-                credential = GoogleRoutines.GetCredential(ApplicationName, Scopes, /*DataStore*/GoogleUserSettings, ClientSecretFile);
+                credential = GoogleRoutines.GetCredential(GoogleSettings.ApplicationName, GoogleSettings.Scopes, GoogleSettings, GoogleSettings.ClientSecretFile);
 
                 BaseClientService.Initializer serviceInitializer = new BaseClientService.Initializer
                 {
                     HttpClientInitializer = credential,
-                    ApplicationName = ApplicationName,
+                    ApplicationName = GoogleSettings.ApplicationName,
                 };
                 service = (T)Activator.CreateInstance(typeof(T), serviceInitializer);
 
                 {//setting GoogleAccount info
                     Google.Apis.Auth.OAuth2.Responses.TokenResponse tokenResponse = credential.Flow.DataStore.GetAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(credential.UserId).Result;
                     if (tokenResponse.IssuedUtc.AddSeconds(10) > DateTime.UtcNow
-                        || string.IsNullOrWhiteSpace(GoogleUserSettings.GoogleAccount)
+                        || string.IsNullOrWhiteSpace(GoogleSettings.GoogleAccount)
                         )//account was set right now and its name needs to be updated
                     {
                         try
@@ -109,24 +89,14 @@ namespace Cliver
                             Log.Error("Could not get the google account info. Make sure that the respective permission scopes are provided.", e);
                             googleAccount = "<not available>";
                         }
-                        //GoogleUserSettings settings = credential.Flow.DataStore as GoogleUserSettings;
-                        //if (settings != null)
-                        //{
-                        //    settings.GoogleAccount = googleAccount;
-                        //    settings.Save();
-                        //}
-                        //else
-                        //{
-                        //    credential.Flow.DataStore.StoreAsync("_GoogleAccount", googleAccount).Wait();
-                        //}
-                        if (GoogleUserSettings.GoogleAccount != googleAccount)
+                        if (GoogleSettings.GoogleAccount != googleAccount)
                         {
-                            GoogleUserSettings.GoogleAccount = googleAccount;
-                            GoogleUserSettings.Save();
+                            GoogleSettings.GoogleAccount = googleAccount;
+                            GoogleSettings.Save();
                         }
                     }
                     else
-                        googleAccount = GoogleUserSettings.GoogleAccount;
+                        googleAccount = GoogleSettings.GoogleAccount;
                 }
             }
         }

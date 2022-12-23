@@ -20,8 +20,7 @@ namespace Cliver
 {
     public class GoogleDrive : GoogleService<DriveService>
     {
-        public GoogleDrive(string applicationName, IEnumerable<string> scopes, GoogleUserSettings googleUserSettings, string clientSecretFile = null)
-            : base(applicationName, scopes, googleUserSettings, clientSecretFile)
+        public GoogleDrive(GoogleSettings googleSettings) : base(googleSettings)
         {
         }
 
