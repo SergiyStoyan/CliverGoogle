@@ -134,11 +134,7 @@ namespace Cliver
 
         public Google.Apis.Drive.v3.Data.File GetObject(string objectIdOrLink, string fields = "id, webViewLink")
         {
-            string objectId;
-            if (Regex.IsMatch( objectIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase))
-                objectId = ExtractObjectIdFromWebLink(objectIdOrLink);
-            else
-                objectId = objectIdOrLink;
+            string objectId = Regex.IsMatch(objectIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase) ? ExtractObjectIdFromWebLink(objectIdOrLink) : objectIdOrLink;
             FilesResource.GetRequest getRequest = Service.Files.Get(objectId);
             getRequest.Fields = getProperFields(fields);
             try
@@ -293,17 +289,22 @@ namespace Cliver
         //replace UploadFile(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         //public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteBaseFolderId, string remoteRelativeFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink"){ }
 
-        public void DownloadFile(string fileId, string localFile)
+        public void DownloadFile(string fileIdOrLink, string localFile)
         {
+            string fileId = Regex.IsMatch(fileIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase) ? ExtractObjectIdFromWebLink(fileIdOrLink) : fileIdOrLink;
             FilesResource.GetRequest request = Service.Files.Get(fileId);
             using (MemoryStream ms = new MemoryStream())
             {
-                request.Download(ms);
+                var progress = request.DownloadWithStatus(ms);
                 using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
                 {
                     ms.WriteTo(fs);
                     fs.Flush();
                 }
+                if (progress.Exception != null)
+                    throw progress.Exception;
+                if (progress.Status == Google.Apis.Download.DownloadStatus.Failed)
+                    throw new Exception(Log.GetThisMethodName() + " got status " + progress.Status);
             }
         }
 
@@ -325,6 +326,62 @@ namespace Cliver
         }
         //replace public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteFilePath, string localFile)
         //public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteBaseFolderId, string remoteRelativeFilePath, string localFile){}
+
+        /// <summary>
+        /// (!) This method has a google internal limitation on size of the object. Use the other ExportDocument() instead.
+        /// </summary>
+        /// <param name="fileIdOrLink"></param>
+        /// <param name="mimeType"></param>
+        /// <param name="localFile"></param>
+        /// <exception cref="Exception"></exception>
+        public void ExportDocument(string fileIdOrLink, string mimeType, string localFile)
+        {
+            string fileId = Regex.IsMatch(fileIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase) ? ExtractObjectIdFromWebLink(fileIdOrLink) : fileIdOrLink;
+            FilesResource.ExportRequest request = Service.Files.Export(fileId, mimeType);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                var progress = request.DownloadWithStatus(ms);
+                using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
+                {
+                    ms.WriteTo(fs);
+                    fs.Flush();
+                }
+                if (progress.Exception != null)
+                    throw progress.Exception;
+                if (progress.Status == Google.Apis.Download.DownloadStatus.Failed)
+                    throw new Exception(Log.GetThisMethodName() + " got status " + progress.Status);
+            }
+        }
+
+        public enum ExportType
+        {
+            Pdf,
+            Odp,
+            Pptx,
+            Txt,
+            Xlsx,
+            Docx,
+            Ods,
+            Tsv,
+            Csv,
+            Zip
+        }
+
+        public void ExportDocument(string fileIdOrLink, ExportType exportType, string localFile)
+        {
+            Google.Apis.Drive.v3.Data.File file = GetObject(fileIdOrLink, "exportLinks");
+            var el = file.ExportLinks.FirstOrDefault(a => Regex.IsMatch(a.Value, @"exportFormat=" + Regex.Escape(exportType.ToString()), RegexOptions.IgnoreCase));
+            if (el.Value == null)
+                throw new Exception("The document does not have an export link for the requested type " + exportType.ToString());
+            using (Stream s = Service.HttpClient.GetStreamAsync(el.Value).Result)
+            {
+                using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
+                {
+                    s.CopyTo(fs);
+                    fs.Flush();
+                }
+            }
+        }
 
         public List<string> RemoveObjects(List<string> objectIds)
         {
