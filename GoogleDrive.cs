@@ -132,8 +132,13 @@ namespace Cliver
                 buildPaths(paths, currentPath, GetObject(parentId, "id, name, parents"));
         }
 
-        public Google.Apis.Drive.v3.Data.File GetObject(string objectId, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File GetObject(string objectIdOrLink, string fields = "id, webViewLink")
         {
+            string objectId;
+            if (Regex.IsMatch( objectIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase))
+                objectId = ExtractObjectIdFromWebLink(objectIdOrLink);
+            else
+                objectId = objectIdOrLink;
             FilesResource.GetRequest getRequest = Service.Files.Get(objectId);
             getRequest.Fields = getProperFields(fields);
             try
