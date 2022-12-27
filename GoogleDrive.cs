@@ -18,7 +18,7 @@ using System.Net.Http;
 
 namespace Cliver
 {
-    public class GoogleDrive : GoogleService<DriveService>
+    public partial class GoogleDrive : GoogleService<DriveService>
     {
         public GoogleDrive(GoogleSettings googleSettings) : base(googleSettings)
         {
@@ -120,22 +120,9 @@ namespace Cliver
             return paths;
         }
 
-        void buildPaths(List<string> paths, string currentPath, Google.Apis.Drive.v3.Data.File currentObject)
-        {
-            if (currentObject == null || currentObject.Parents == null || currentObject.Parents.Count < 1)//it is root 'My Drive'
-            {
-                paths.Add(currentPath);
-                return;
-            }
-            currentPath = currentObject.Name + (string.IsNullOrWhiteSpace(currentPath) ? "" : "\\" + currentPath);
-            foreach (string parentId in currentObject.Parents)
-                buildPaths(paths, currentPath, GetObject(parentId, "id, name, parents"));
-        }
-
         public Google.Apis.Drive.v3.Data.File GetObject(string objectIdOrLink, string fields = "id, webViewLink")
         {
-            string objectId = Regex.IsMatch(objectIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase) ? ExtractObjectIdFromWebLink(objectIdOrLink) : objectIdOrLink;
-            FilesResource.GetRequest getRequest = Service.Files.Get(objectId);
+            FilesResource.GetRequest getRequest = Service.Files.Get(GetObjectId(objectIdOrLink));
             getRequest.Fields = getProperFields(fields);
             try
             {
@@ -149,150 +136,9 @@ namespace Cliver
             }
         }
 
-        public enum GettingMode
-        {
-            AlwaysCreateNew,
-            GetLatestExistingOrCreate,
-            GetLatestExistingOnly,
-        }
-        public Google.Apis.Drive.v3.Data.File GetFolder(string parentFolderId, string folderName, GettingMode gettingMode, string fields = "id, webViewLink")
-        {
-            if (parentFolderId == null && string.IsNullOrEmpty(folderName))//root folder
-                return GetObject(RootFolderId, fields);
-            if (gettingMode != GettingMode.AlwaysCreateNew)
-            {
-                SearchFilter sf = new SearchFilter { IsFolder = true, ParentId = parentFolderId, Name = folderName };
-                IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
-                Google.Apis.Drive.v3.Data.File ff = fs.FirstOrDefault();
-                if (ff != null)
-                    return ff;
-                if (gettingMode == GettingMode.GetLatestExistingOnly)
-                    return null;
-            }
-            Google.Apis.Drive.v3.Data.File f = new Google.Apis.Drive.v3.Data.File
-            {
-                Name = folderName,
-                MimeType = folderMimeType,
-                Parents = parentFolderId != null ? new List<string> { parentFolderId } : null
-            };
-            var request = Service.Files.Create(f);
-            request.Fields = getProperFields(fields);
-            return request.Execute();
-        }
-        //replace GetFolder(string parentFolderId, string folderName, GettingMode gettingMode, string fields = "id, webViewLink")
-        //public Google.Apis.Drive.v3.Data.File GetFolder(string baseFolderId, string relativeFolderPath, GettingMode gettingMode, string fields = "id, webViewLink"){ }
-
-        public Google.Apis.Drive.v3.Data.File GetFolder(string folderPath, GettingMode gettingMode, string fields = "id, webViewLink")
-        {
-            if (gettingMode == GettingMode.AlwaysCreateNew
-                || !paths2object.TryGetValue(folderPath, out Google.Apis.Drive.v3.Data.File _object)
-                || _object == null && gettingMode == GettingMode.GetLatestExistingOrCreate
-                )
-            {
-                Match m = Regex.Match(folderPath, @"^(.*)\\+([^\\]+)$");
-                string folderName;
-                string parentFolderId;
-                if (m.Success)
-                {
-                    folderName = m.Groups[2].Value;
-                    Google.Apis.Drive.v3.Data.File parentFolder = GetFolder(m.Groups[1].Value, gettingMode == GettingMode.AlwaysCreateNew ? GettingMode.GetLatestExistingOrCreate : gettingMode, fields);
-                    if (parentFolder == null)
-                        return null;
-                    parentFolderId = parentFolder.Id;
-                }
-                else
-                {
-                    folderName = folderPath;
-                    parentFolderId = RootFolderId;
-                }
-                _object = GetFolder(parentFolderId, folderName, gettingMode, fields);
-                paths2object[folderPath] = _object;
-            }
-            return _object;
-        }
-        Dictionary<string, Google.Apis.Drive.v3.Data.File> paths2object = new Dictionary<string, Google.Apis.Drive.v3.Data.File>();
-
-        public Google.Apis.Drive.v3.Data.File GetFile(string filePath, string fields = "id, webViewLink")
-        {
-            if (!paths2object.TryGetValue(filePath, out Google.Apis.Drive.v3.Data.File @object))
-            {
-                string parentFolderPath = Regex.Replace(filePath, @"\\[^\\]*$", "");
-                Google.Apis.Drive.v3.Data.File parentFolder = GetFolder(parentFolderPath, GettingMode.GetLatestExistingOnly);
-                if (parentFolder == null)
-                    return null;
-
-                string fileName = Regex.Replace(filePath, @".*\\", "");
-                SearchFilter sf = new SearchFilter { IsFolder = false, ParentId = parentFolder.Id, Name = fileName };
-                IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
-                @object = fs.FirstOrDefault();
-                if (@object != null)
-                    paths2object[filePath] = @object;
-            }
-            return @object;
-        }
-        //replace GetFile(string filePath, string fields = "id, webViewLink")
-        //public Google.Apis.Drive.v3.Data.File GetFile(string baseFolderId, string relativeFilePath, string fields = "id, webViewLink"){ }
-
-        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
-        {
-            Google.Apis.Drive.v3.Data.File folder = GetFolder(PathRoutines.GetFileDir(remoteFilePath), GettingMode.GetLatestExistingOrCreate, fields);
-            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
-            {
-                Name = PathRoutines.GetFileName(remoteFilePath),
-                //MimeType = getMimeType(localFile), 
-                //Description=,
-            };
-            using (FileStream fileStream = new FileStream(localFile, FileMode.Open, FileAccess.Read))
-            {
-                if (updateExisting)
-                {
-                    SearchFilter sf = new SearchFilter { IsFolder = false, ParentId = folder.Id, Name = file.Name };
-                    IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
-                    Google.Apis.Drive.v3.Data.File f = fs.FirstOrDefault();
-                    if (f != null)
-                    {
-                        FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
-                        updateMediaUpload.Fields = getProperFields(fields);
-                        Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
-                        if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
-                            throw new Exception("Uploading file failed.", uploadProgress.Exception);
-                        if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
-                            throw new Exception("Uploading file has not been completed.");
-                        return updateMediaUpload.ResponseBody;
-                    }
-                }
-                {
-                    file.Parents = new List<string>
-                    {
-                        folder.Id
-                    };
-                    FilesResource.CreateMediaUpload createMediaUpload = Service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
-                    createMediaUpload.Fields = getProperFields(fields);
-                    Google.Apis.Upload.IUploadProgress uploadProgress = createMediaUpload.Upload();
-                    if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
-                        throw new Exception("Uploading file failed.", uploadProgress.Exception);
-                    if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
-                        throw new Exception("Uploading file has not been completed.");
-                    return createMediaUpload.ResponseBody;
-                }
-            }
-        }
-        static string getMimeType(string fileName)
-        {
-            string mimeType = "application/unknown";
-            string ext = Path.GetExtension(fileName).ToLower();
-            Microsoft.Win32.RegistryKey regKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(ext);
-            if (regKey != null && regKey.GetValue("Content Type") != null)
-                mimeType = regKey.GetValue("Content Type").ToString();
-            return mimeType;
-        }
-        //replace UploadFile(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
-        //public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteBaseFolderId, string remoteRelativeFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink"){ }
-
         public void DownloadFile(string fileIdOrLink, string localFile)
         {
-            string fileId = Regex.IsMatch(fileIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase) ? ExtractObjectIdFromWebLink(fileIdOrLink) : fileIdOrLink;
-            FilesResource.GetRequest request = Service.Files.Get(fileId);
+            FilesResource.GetRequest request = Service.Files.Get(GetObjectId(fileIdOrLink));
             using (MemoryStream ms = new MemoryStream())
             {
                 var progress = request.DownloadWithStatus(ms);
@@ -316,17 +162,6 @@ namespace Cliver
             DownloadFile(m.Groups[1].Value, localFile);
         }
 
-        public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteFilePath, string localFile)
-        {
-            Google.Apis.Drive.v3.Data.File file = GetFile(remoteFilePath);
-            if (file == null)
-                return null;
-            DownloadFile(file.Id, localFile);
-            return file;
-        }
-        //replace public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteFilePath, string localFile)
-        //public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteBaseFolderId, string remoteRelativeFilePath, string localFile){}
-
         /// <summary>
         /// (!) This method has a google internal limitation on size of the object. Use the other ExportDocument() instead.
         /// </summary>
@@ -336,8 +171,7 @@ namespace Cliver
         /// <exception cref="Exception"></exception>
         public void ExportDocument(string fileIdOrLink, string mimeType, string localFile)
         {
-            string fileId = Regex.IsMatch(fileIdOrLink, @"^\s*https?\:", RegexOptions.IgnoreCase) ? ExtractObjectIdFromWebLink(fileIdOrLink) : fileIdOrLink;
-            FilesResource.ExportRequest request = Service.Files.Export(fileId, mimeType);
+            FilesResource.ExportRequest request = Service.Files.Export(GetObjectId(fileIdOrLink), mimeType);
             using (MemoryStream ms = new MemoryStream())
             {
                 var progress = request.DownloadWithStatus(ms);
@@ -366,14 +200,35 @@ namespace Cliver
             Csv,
             Zip
         }
-
-        public void ExportDocument(string fileIdOrLink, ExportType exportType, string localFile)
+        //public void ExportDocument(string fileIdOrLink, ExportType exportType, string localFile)
+        ////!!!issues:
+        //// - some exported xlsx cannot be read by POI;
+        //// - ExportLinks always point to first sheet only when exporting to tsv/csv;
+        //{
+        //    Google.Apis.Drive.v3.Data.File file = GetObject(fileIdOrLink, "exportLinks");
+        //    var el = file.ExportLinks.FirstOrDefault(a => Regex.IsMatch(a.Value, @"exportFormat=" + Regex.Escape(exportType.ToString()), RegexOptions.IgnoreCase));
+        //    if (el.Value == null)
+        //        throw new Exception("The document does not have an export link for the requested type " + exportType.ToString());
+        //    using (Stream s = Service.HttpClient.GetStreamAsync(el.Value).Result)
+        //    {
+        //        using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
+        //        {
+        //            s.CopyTo(fs);
+        //            fs.Flush();
+        //        }
+        //    }
+        //}
+        public void ExportDocument(string fileLink, ExportType exportType, string localFile)
         {
-            Google.Apis.Drive.v3.Data.File file = GetObject(fileIdOrLink, "exportLinks");
-            var el = file.ExportLinks.FirstOrDefault(a => Regex.IsMatch(a.Value, @"exportFormat=" + Regex.Escape(exportType.ToString()), RegexOptions.IgnoreCase));
-            if (el.Value == null)
-                throw new Exception("The document does not have an export link for the requested type " + exportType.ToString());
-            using (Stream s = Service.HttpClient.GetStreamAsync(el.Value).Result)
+            //string l = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/gviz/tq?tqx=out:" + exportType + "&sheet=" + System.Web.HttpUtility.UrlEncode(sheetName);!!!produces js with exporting data
+            //string l1 = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&sheet=" + System.Web.HttpUtility.UrlEncode("Master");!!!gets only the first sheet
+            Match m = Regex.Match(fileLink, @"^\s*(.*)/edit.*?(?:\#gid\=(\d+))?", RegexOptions.IgnoreCase);
+            if (!m.Success)
+                throw new Exception("Could not parse the link: " + fileLink);
+            string l = m.Groups[1].Value + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + m.Groups[2].Value;
+            //https://docs.google.com/spreadsheets/d/e/{key}/pub?output=tsv&gid={gid}
+            //https://docs.google.com/spreadsheets/d/KEY/export?format=csv&id=KEY&gid=SHEET_ID
+            using (Stream s = Service.HttpClient.GetStreamAsync(l).Result)
             {
                 using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
                 {
@@ -468,13 +323,6 @@ namespace Cliver
                 objectId
                 );
             return updateRequest.Execute();
-        }
-
-        public static string ExtractObjectIdFromWebLink(string webLink)
-        {
-            webLink = Regex.Replace(webLink, @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase);
-            Match m = Regex.Match(webLink, @"/([^/]*)$", RegexOptions.IgnoreCase);
-            return m.Success ? m.Groups[1].Value : null;
         }
     }
 }
