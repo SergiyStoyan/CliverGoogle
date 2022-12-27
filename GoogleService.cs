@@ -103,7 +103,7 @@ namespace Cliver
 
         public Action OnInteractiveAuthentication = null;
 
-        protected T Service
+        public T Service
         {
             get
             {

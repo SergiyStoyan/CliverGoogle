@@ -18,28 +18,44 @@ using System.Net.Http;
 
 namespace Cliver
 {
-    public class GoogleSheet : GoogleService<SheetsService>
+    public partial class GoogleSheet : GoogleService<SheetsService>
     {
         public GoogleSheet(GoogleSettings googleSettings) : base(googleSettings)
         {
         }
 
-        //public GoogleSheet(string applicationName, IEnumerable<string> scopes, IDataStore dataStore, string clientSecretFile = null)
-        //    : base(applicationName, scopes, dataStore, clientSecretFile)
-        //{
-        //}
-
-        //public GoogleSheet(string applicationName, IEnumerable<string> scopes, string credentialDir = null, string clientSecretFile = null)
-        //    : base(applicationName, scopes, credentialDir, clientSecretFile)
-        //{
-        //}
-
-        public void test()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bookIdOrLink"></param>
+        /// <param name="range">example: "SheetName!A3:C9", where SheetName is optional and will be set automatically if bookIdOrLink contains the target sheet ID</param>
+        /// <returns></returns>
+        public IList<IList<object>> GetValues(string bookIdOrLink, string range = null)
         {
-            AddFilterViewRequest addFilterViewRequest = new AddFilterViewRequest { Filter = new FilterView { Criteria = new Dictionary<string, FilterCriteria> { { "1", new FilterCriteria { Condition = new BooleanCondition { } } } } } };
-            SpreadsheetsResource.ValuesResource.GetRequest getRequest = Service.Spreadsheets.Values.Get("1k-dLZFk4YmjX__3Yb9__A6JJojUPpNEE9CucZuyULSU", "Items!A1:C3");
-            //            SpreadsheetsResource.GetRequest getRequest = service.Spreadsheets.Get("1k-dLZFk4YmjX__3Yb9__A6JJojUPpNEE9CucZuyULSU");
-            var response = getRequest.Execute();
+            var ids = GetSheetIds(bookIdOrLink);
+            if (ids.SheetId >= 0
+                && (range == null || !range.Contains("!") && range.Contains(":"))//no sheet is specified in the range
+                )
+            {
+                var names = GetNames(bookIdOrLink);
+                if (names.SheetName != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(range))
+                        range = "!" + range;
+                    range = names.SheetName + range;
+                }
+            }
+            SpreadsheetsResource.ValuesResource.GetRequest request = Service.Spreadsheets.Values.Get(ids.BookId, range);
+            var response = request.Execute();
+            return response.Values;
+        }
+
+        public (string BookName, string SheetName) GetNames(string bookIdOrLink)
+        {
+            var ids = GetSheetIds(bookIdOrLink);
+            SpreadsheetsResource.GetRequest request = Service.Spreadsheets.Get(ids.BookId);
+            var response = request.Execute();
+            return (response.Properties.Title, response.Sheets.FirstOrDefault(a => a.Properties.SheetId == ids.SheetId)?.Properties.Title);
         }
     }
 }

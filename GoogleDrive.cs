@@ -219,6 +219,7 @@ namespace Cliver
         //    }
         //}
         public void ExportDocument(string fileLink, ExportType exportType, string localFile)
+            //!!!Export to tsv is done without quotations so multiline values brake rows
         {
             //string l = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/gviz/tq?tqx=out:" + exportType + "&sheet=" + System.Web.HttpUtility.UrlEncode(sheetName);!!!produces js with exporting data
             //string l1 = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&sheet=" + System.Web.HttpUtility.UrlEncode("Master");!!!gets only the first sheet
@@ -227,7 +228,7 @@ namespace Cliver
                 throw new Exception("Could not parse the link: " + fileLink);
             string l = m.Groups[1].Value + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + m.Groups[2].Value;
             //https://docs.google.com/spreadsheets/d/e/{key}/pub?output=tsv&gid={gid}
-            //https://docs.google.com/spreadsheets/d/KEY/export?format=csv&id=KEY&gid=SHEET_ID
+            //https://docs.google.com/spreadsheets/d/KEY/export?format=csv&gid=SHEET_ID
             using (Stream s = Service.HttpClient.GetStreamAsync(l).Result)
             {
                 using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))

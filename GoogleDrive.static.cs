@@ -27,14 +27,14 @@ namespace Cliver
 
         public static string ExtractObjectIdFromWebLink(string webLink)
         {
-            webLink = Regex.Replace(webLink, @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase);
-            Match m = Regex.Match(webLink, @"/([^/]*)$", RegexOptions.IgnoreCase);
+            webLink = Regex.Replace(webLink.Trim(), @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase);
+            Match m = Regex.Match(webLink, @"/([^/]+)$", RegexOptions.IgnoreCase);
             return m.Success ? m.Groups[1].Value : null;
         }
 
         public static bool IsObjectLink(string v)
         {
-            return Regex.IsMatch(v, @"^\s*https?\://(docs|drive)\.google\.com/", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(v.Trim(), @"^\s*https?\://(docs|drive)\.google\.com/", RegexOptions.IgnoreCase);
         }
     }
 }
