@@ -31,7 +31,7 @@ namespace Cliver
         {
             Match m = Regex.Match(webLink.Trim(), @"/(?'BookId'[^/]+)(/(edit|view))?(\#gid\=(?'SheetId'\d+))?$", RegexOptions.IgnoreCase);
             if (!m.Success)
-                return (null, -1);
+                throw new Exception("Could not parse the link: " + webLink);
             return (m.Groups["BookId"].Value, int.Parse(m.Groups["SheetId"].Value));
         }
 

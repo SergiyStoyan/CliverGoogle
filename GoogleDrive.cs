@@ -219,16 +219,19 @@ namespace Cliver
         //    }
         //}
         public void ExportDocument(string fileLink, ExportType exportType, string localFile)
-            //!!!Export to tsv is done without quotations so multiline values brake rows
         {
             //string l = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/gviz/tq?tqx=out:" + exportType + "&sheet=" + System.Web.HttpUtility.UrlEncode(sheetName);!!!produces js with exporting data
-            //string l1 = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&sheet=" + System.Web.HttpUtility.UrlEncode("Master");!!!gets only the first sheet
-            Match m = Regex.Match(fileLink, @"^\s*(.*)/edit.*?(?:\#gid\=(\d+))?", RegexOptions.IgnoreCase);
-            if (!m.Success)
-                throw new Exception("Could not parse the link: " + fileLink);
-            string l = m.Groups[1].Value + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + m.Groups[2].Value;
-            //https://docs.google.com/spreadsheets/d/e/{key}/pub?output=tsv&gid={gid}
-            //https://docs.google.com/spreadsheets/d/KEY/export?format=csv&gid=SHEET_ID
+
+            var ids = GoogleSheet.GetSheetIds(fileLink);
+
+            //https://docs.google.com/spreadsheets/d/e/{key}/pub?output=tsv&gid={gid} - !!!404 (probably because not public)
+            //string l = "https://docs.google.com/spreadsheets/d/e/" + ids.BookId + "/pub?output=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + ids.SheetId;
+
+            //https://docs.google.com/spreadsheets/d/KEY/export?format=csv&gid=SHEET_ID - !!!Export to tsv is done without quotations so multiline values brake rows
+            //string l = m.Groups[1].Value + "/export?format=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + m.Groups[2].Value;
+
+            //https://docs.google.com/feeds/download/spreadsheets/Export?key<FILE_ID>&exportFormat=csv&gid=<>   - multiline values are converted into singleline joined with space
+            string l = "https://docs.google.com/feeds/download/spreadsheets/Export?key=" + ids.BookId + "&exportFormat=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + ids.SheetId;
             using (Stream s = Service.HttpClient.GetStreamAsync(l).Result)
             {
                 using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))

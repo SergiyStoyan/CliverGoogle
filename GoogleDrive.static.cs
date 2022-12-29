@@ -29,7 +29,9 @@ namespace Cliver
         {
             webLink = Regex.Replace(webLink.Trim(), @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase);
             Match m = Regex.Match(webLink, @"/([^/]+)$", RegexOptions.IgnoreCase);
-            return m.Success ? m.Groups[1].Value : null;
+            if (!m.Success)
+                throw new Exception("Could not parse the link: " + webLink);
+            return m.Groups[1].Value;
         }
 
         public static bool IsObjectLink(string v)
