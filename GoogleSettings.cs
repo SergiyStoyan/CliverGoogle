@@ -54,6 +54,10 @@ namespace Cliver
         /// </summary>
         virtual protected StringEndec Endec { get; } = null;
 
+        /// <summary>
+        /// (!)When overriding, first invoke the base method.
+        /// </summary>
+        /// <exception cref="Exception"></exception>
         protected override void Loaded()
         {
             if (GoogleCache == null)
@@ -86,6 +90,9 @@ namespace Cliver
             }
         }
 
+        /// <summary>
+        /// (!)When overriding, first invoke the base method.
+        /// </summary>
         protected override void Saving()
         {
             if (Endec != null)

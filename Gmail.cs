@@ -271,6 +271,8 @@ namespace Cliver
         public Google.Apis.Gmail.v1.Data.Message Send(Message message)
         {
             string rm = $"To: {message.To}\r\nSubject: {message.Subject}\r\nContent-Type: text/html;charset=utf-8\r\n\r\n{message.Body}";
+            if (message.UserId == null)
+                message.UserId = Gmail.SearchFilter.OwnerMe;
             return send(Base64UrlEncode(rm), message.UserId);
         }
 
