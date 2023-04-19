@@ -268,10 +268,18 @@ namespace Cliver
             return GetUserProfile(userId)?.EmailAddress;
         }
 
+        /// <summary>
+        /// (!)Field From is ignored when it is wrong.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         public Google.Apis.Gmail.v1.Data.Message Send(Message message)
         {
-            string rm = $"To: {message.To}\r\nSubject: {message.Subject}\r\nContent-Type: text/html;charset=utf-8\r\n\r\n{message.Body}";
-            if (message.UserId == null)
+            string rm = $"To: {message.To}";
+            if (!string.IsNullOrEmpty(message.From))
+                rm += $"\r\nFrom: {message.From}";
+            rm += $"\r\nSubject: {message.Subject}\r\nContent-Type: text/html;charset=utf-8\r\n\r\n{message.Body}";
+            if (string.IsNullOrEmpty(message.UserId))
                 message.UserId = Gmail.SearchFilter.OwnerMe;
             return send(Base64UrlEncode(rm), message.UserId);
         }
@@ -289,6 +297,12 @@ namespace Cliver
             return request.Execute();
         }
 
+        /// <summary>
+        /// !!!Not recommended. Hacky!
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         public Google.Apis.Gmail.v1.Data.Message Send(System.Net.Mail.MailMessage message, string userId = Gmail.SearchFilter.OwnerMe)
         {
             System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
@@ -306,8 +320,8 @@ namespace Cliver
                 {
                     raw = sr.ReadToEnd();
                 }
-                System.Reflection.MethodInfo closeMethod = mailWriter.GetType().GetMethod("Close", flags);
-                closeMethod.Invoke(mailWriter, flags, null, new object[] { }, null);
+                //System.Reflection.MethodInfo closeMethod = mailWriter.GetType().GetMethod("Close", flags);
+                //closeMethod.Invoke(mailWriter, flags, null, new object[] { }, null);
             }
             return send(raw, userId);
         }
