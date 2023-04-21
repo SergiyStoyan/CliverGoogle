@@ -1,0 +1,137 @@
+<html>
+<head>
+<title>Cliver Google</title>
+ 
+<link rel="stylesheet" type="text/css" href="main.css">
+<link rel="stylesheet" type="text/css" href="menu_generator.css">
+
+<link href="prism.css" rel="stylesheet" />
+
+</head>
+<body>
+<script src="prism.js"></script>
+<div class='header'>
+<div class='mainHeader'>Cliver Google 4.*</div>
+</div>
+
+<div class='content'>
+<h1><a name='CliverGoogle'>Overview</a></h1>
+CliverGoogle is a wrapper for Google.Apis
+	<br>	
+<p>
+CliverGoogle's goals are:		
+<p>
+- managing connection data;		
+<p>
+- providing an easy API for operating objects;
+
+
+
+		
+<p><b>Compatibility</b>
+<br>CliverGoogle is compatible with .NET Standard 2.0.
+
+
+
+            <h2><a name='licensing'>Licensing</a></h2>
+			
+			 See in <a href='#source'>the repository</a>.
+			
+	
+            <h2><a name='source'>Source code</a></h2>
+            Open <a href='https://github.com/sergiystoyan/CliverGoogle' target='_blank'>repository</a>.
+        <p>
+            Do not download the latest code from a branch because it may be under development. Instead, use the latest (pre-)release code.
+
+
+		
+			
+<h1>Usage</h1>
+<span class='attention'>(!)</span>All the examples require CliverWinRoutines package which is not mandatory for CliverGoogle itself.
+
+<h2>GoogleSettings</h2>
+			
+An example of Settings class that stores connection information and custom data:
+
+<script type="text/plain" class="language-csharp">using Cliver;
+
+...
+public partial class Settings
+{
+	public static GmailSettings Gmail;
+
+	public class GmailSettings : GoogleSettings
+	{
+		// Set this object in the child class if the cache must be stored encrypted.
+		protected override StringEndec Endec => new Win.StringEndec.ProtectedData();
+	
+		[Newtonsoft.Json.JsonIgnore]
+		public override string[] Scopes => new string[] {//it's better to request all the scopes at once to avoid re-authorization
+			Google.Apis.Gmail.v1.GmailService.Scope.GmailLabels
+			, Google.Apis.Gmail.v1.GmailService.Scope.GmailModify
+		};
+
+		public Gmail CreateGmail()
+		{
+			Gmail g = new Gmail(this);
+			g.OnInteractiveAuthentication = () =>
+			{
+				Message.Inform("On the web page that will open next, please set the google account from which invoices are to be downloaded.");
+			};
+			Log.Inform("Gmail account: " + g.GoogleAccount);
+			return g;
+		}
+	}
+}</script>
+		
+		
+
+
+
+<h2>Operating</h2>
+<br><p>Example of opening connection to a gmail account and downloading email attachments:
+			
+<script type="text/plain" class="language-csharp">using Cliver;
+
+...     
+using (Gmail g = Settings.Gmail.CreateGmail())
+{
+	Gmail.SearchFilter sf = new Gmail.SearchFilter { CustomRequest = "test" };
+	IEnumerable<Gmail.Message> ms = g.FindMessages(sf);
+	foreach (var m in ms)
+	{
+		Log.Inform("Reading...: " + m.Date + " < " + m.Subject);
+		foreach (var a in m.Attachments)
+		{
+				string file = PathRoutines.GetNormalizedPath(Settings.LocalInfo.InputFolder + "\\" + a.FileName, false);
+				Log.Inform("Downloading...: " + file);
+				g.DownloadAttachment(m, a.Id, file);
+		}
+		Log.Inform("Setting read...");
+		g.SetRead(m);
+	}
+}</script>
+               
+
+
+
+
+</div>
+
+<div class='footer'>
+        <script src='copyright.js'></script>
+        &nbsp;&nbsp;by&nbsp;<a href="javascript:window.location.href = '&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#115;&#101;&#114;&#103;&#101;&#121;&#46;&#115;&#116;&#111;&#121;&#97;&#110;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;'" target="_top">Sergey Stoyan</a>
+</script>
+        
+</div>
+
+<script>
+if(!window.location.href.match(/\#./ig)){
+    window.location.href = window.location.href.replace(/#.*/, '') + '#1';
+    location.reload();
+}
+</script>
+<script src='menu_generator.js' shiftHeaderAndFooterToContentView=''></script>
+
+</body>
+</html>
