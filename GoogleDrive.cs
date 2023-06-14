@@ -40,7 +40,7 @@ namespace Cliver
 
         public class SearchFilter
         {
-            public DateTime? ModifiedTimeMin = null; 
+            public DateTime? ModifiedTimeMin = null;
             //public class NameFilter
             //{
             //    public string Value;
@@ -172,6 +172,30 @@ namespace Cliver
             if (!m.Success)
                 throw new Exception("Uri: " + file + " is not a google file link.");
             DownloadFile(m.Groups[1].Value, localFile);
+        }
+
+        public Google.Apis.Drive.v3.Data.File UpdateFile(string localFile, string remoteFileIdOrLink, string remoteFileName = null, string contentType = null, string fields = "id, webViewLink")
+        {
+            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+            {
+                Name = remoteFileName,
+                //MimeType = getMimeType(localFile), 
+                //Description=,
+            };
+            using (FileStream fileStream = new FileStream(localFile, FileMode.Open, FileAccess.Read))
+            {
+                Google.Apis.Drive.v3.Data.File f = GetObject(remoteFileIdOrLink, fields);
+                if (f == null)
+                    throw new Exception2("Remote file does not exist: " + remoteFileIdOrLink);
+                FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                updateMediaUpload.Fields = getProperFields(fields);
+                Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
+                if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
+                    throw new Exception("Uploading file failed.", uploadProgress.Exception);
+                if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
+                    throw new Exception("Uploading file has not been completed.");
+                return updateMediaUpload.ResponseBody;
+            }
         }
 
         /// <summary>

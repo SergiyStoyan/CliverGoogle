@@ -117,7 +117,63 @@ namespace Cliver
         //replace GetFile(string filePath, string fields = "id, webViewLink")
         //public Google.Apis.Drive.v3.Data.File GetFile(string baseFolderId, string relativeFilePath, string fields = "id, webViewLink"){ }
 
-        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        /// <summary>
+        /// Rename to UploadFile() when tested and the apps updated.
+        /// </summary>
+        /// <param name="localFile"></param>
+        /// <param name="remoteFolderIdOrLink"></param>
+        /// <param name="remoteFileName"></param>
+        /// <param name="contentType"></param>
+        /// <param name="updateExisting"></param>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public Google.Apis.Drive.v3.Data.File UploadFile2(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        {
+            Google.Apis.Drive.v3.Data.File folder = GetObject(remoteFolderIdOrLink);
+            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+            {
+                Name = remoteFileName != null ? remoteFileName : PathRoutines.GetFileName(localFile),
+                //MimeType = getMimeType(localFile), 
+                //Description=,
+            };
+            using (FileStream fileStream = new FileStream(localFile, FileMode.Open, FileAccess.Read))
+            {
+                if (updateExisting)
+                {
+                    SearchFilter sf = new SearchFilter { IsFolder = false, ParentId = folder.Id, Name = file.Name };
+                    IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
+                    Google.Apis.Drive.v3.Data.File f = fs.FirstOrDefault();
+                    if (f != null)
+                    {
+                        FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                        updateMediaUpload.Fields = getProperFields(fields);
+                        Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
+                        if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
+                            throw new Exception("Uploading file failed.", uploadProgress.Exception);
+                        if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
+                            throw new Exception("Uploading file has not been completed.");
+                        return updateMediaUpload.ResponseBody;
+                    }
+                }
+                {
+                    file.Parents = new List<string>
+                    {
+                        folder.Id
+                    };
+                    FilesResource.CreateMediaUpload createMediaUpload = Service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                    createMediaUpload.Fields = getProperFields(fields);
+                    Google.Apis.Upload.IUploadProgress uploadProgress = createMediaUpload.Upload();
+                    if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
+                        throw new Exception("Uploading file failed.", uploadProgress.Exception);
+                    if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
+                        throw new Exception("Uploading file has not been completed.");
+                    return createMediaUpload.ResponseBody;
+                }
+            }
+        }
+
+        public Google.Apis.Drive.v3.Data.File UploadFileByPath(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
             Google.Apis.Drive.v3.Data.File folder = GetFolder(PathRoutines.GetFileDir(remoteFilePath), GettingMode.GetLatestExistingOrCreate, fields);
             Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
