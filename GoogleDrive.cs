@@ -40,7 +40,19 @@ namespace Cliver
 
         public class SearchFilter
         {
-            public DateTime? ModifiedTimeMin = null;
+            public DateTime? ModifiedTimeMin = null; 
+            //public class NameFilter
+            //{
+            //    public string Value;
+            //    public enum Operators
+            //    {
+            //        Contains,
+            //        IsEqual,
+            //        IsNotEqual
+            //    }
+            //    Operators Operator;
+            //}
+            //public NameFilter Name = null;
             public string Name = null;
             public string ParentId = null;
             public bool? Trashed = false;
