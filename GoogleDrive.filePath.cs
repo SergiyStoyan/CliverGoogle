@@ -128,7 +128,7 @@ namespace Cliver
         /// <param name="fields"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public Google.Apis.Drive.v3.Data.File UploadFile2(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
             Google.Apis.Drive.v3.Data.File folder = GetObject(remoteFolderIdOrLink);
             Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
