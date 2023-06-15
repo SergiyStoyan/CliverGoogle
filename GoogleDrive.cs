@@ -176,17 +176,17 @@ namespace Cliver
 
         public Google.Apis.Drive.v3.Data.File UpdateFile(string localFile, string remoteFileIdOrLink, string remoteFileName = null, string contentType = null, string fields = "id, webViewLink")
         {
-            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
-            {
-                Name = remoteFileName,
-                //MimeType = getMimeType(localFile), 
-                //Description=,
-            };
             using (FileStream fileStream = new FileStream(localFile, FileMode.Open, FileAccess.Read))
             {
                 Google.Apis.Drive.v3.Data.File f = GetObject(remoteFileIdOrLink, fields);
                 if (f == null)
                     throw new Exception2("Remote file does not exist: " + remoteFileIdOrLink);
+                Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+                {
+                    Name = remoteFileName,
+                    //MimeType = getMimeType(localFile), 
+                    //Description=,
+                };
                 FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
                 updateMediaUpload.Fields = getProperFields(fields);
                 Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
