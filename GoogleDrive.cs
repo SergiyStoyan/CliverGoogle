@@ -166,6 +166,30 @@ namespace Cliver
             }
         }
 
+        public string DownloadFile2Folder(string fileIdOrLink, string localFolder)
+        {
+            FilesResource.GetRequest request = Service.Files.Get(GetObjectId(fileIdOrLink));
+            request.Fields = "id, name";
+            var f = request.Execute();
+            if (f == null)
+                throw new Exception("File does not exist: " + fileIdOrLink);
+            string localFile = localFolder + Path.DirectorySeparatorChar + PathRoutines.GetLegalizedFileName(f.Name);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                var progress = request.DownloadWithStatus(ms);
+                using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
+                {
+                    ms.WriteTo(fs);
+                    fs.Flush();
+                }
+                if (progress.Exception != null)
+                    throw progress.Exception;
+                if (progress.Status == Google.Apis.Download.DownloadStatus.Failed)
+                    throw new Exception(Log.GetThisMethodName() + " got status " + progress.Status);
+            }
+            return localFile;
+        }
+
         public void DownloadFile(Uri file, string localFile)
         {
             Match m = Regex.Match(file.AbsoluteUri, @"https://.*?/file/d/(.*?)(/|$)");
@@ -180,7 +204,7 @@ namespace Cliver
             {
                 Google.Apis.Drive.v3.Data.File f = GetObject(remoteFileIdOrLink, fields);
                 if (f == null)
-                    throw new Exception2("Remote file does not exist: " + remoteFileIdOrLink);
+                    throw new Exception("Remote file does not exist: " + remoteFileIdOrLink);
                 Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
                 {
                     Name = remoteFileName,

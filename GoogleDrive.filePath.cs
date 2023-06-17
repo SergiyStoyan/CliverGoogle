@@ -117,17 +117,6 @@ namespace Cliver
         //replace GetFile(string filePath, string fields = "id, webViewLink")
         //public Google.Apis.Drive.v3.Data.File GetFile(string baseFolderId, string relativeFilePath, string fields = "id, webViewLink"){ }
 
-        /// <summary>
-        /// Rename to UploadFile() when tested and the apps updated.
-        /// </summary>
-        /// <param name="localFile"></param>
-        /// <param name="remoteFolderIdOrLink"></param>
-        /// <param name="remoteFileName"></param>
-        /// <param name="contentType"></param>
-        /// <param name="updateExisting"></param>
-        /// <param name="fields"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
         public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
             Google.Apis.Drive.v3.Data.File folder = GetObject(remoteFolderIdOrLink);
