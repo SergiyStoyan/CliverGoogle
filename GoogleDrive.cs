@@ -278,11 +278,11 @@ namespace Cliver
         //        }
         //    }
         //}
-        public void ExportDocument(string fileLink, ExportType exportType, string localFile)
+        public void ExportDocument(string fileIdOrLink, ExportType exportType, string localFile)
         {
             //string l = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/gviz/tq?tqx=out:" + exportType + "&sheet=" + System.Web.HttpUtility.UrlEncode(sheetName);!!!produces js with exporting data
 
-            var ids = GoogleSheet.GetSheetIds(fileLink);
+            var ids = GoogleSheet.GetSheetIds(GetObjectId(fileIdOrLink));
 
             //https://docs.google.com/spreadsheets/d/e/{key}/pub?output=tsv&gid={gid} - !!!404 (probably because not public)
             //string l = "https://docs.google.com/spreadsheets/d/e/" + ids.BookId + "/pub?output=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + ids.SheetId;
@@ -302,7 +302,7 @@ namespace Cliver
             }
         }
 
-        public List<string> RemoveObjects(List<string> objectIds)
+        public List<string> RemoveObjects(List<string> objectIdOrLinks)
         {
             List<string> errors = new List<string>();
             BatchRequest batchRequest = new BatchRequest(Service);
@@ -315,9 +315,9 @@ namespace Cliver
             {
                 Trashed = true
             };
-            foreach (string oi in objectIds)
+            foreach (string oil in objectIdOrLinks)
             {
-                FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, oi);
+                FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, GetObjectId(oil));
                 batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(updateRequest, callback);
             }
             batchRequest.ExecuteAsync().Wait();
@@ -329,21 +329,22 @@ namespace Cliver
             return fields + (Regex.IsMatch(fields, @"(^|\s|,)id($|\s|,)", RegexOptions.IgnoreCase) ? "" : ", id");
         }
 
-        public Google.Apis.Drive.v3.Data.File RenameObject(string objectId, string name2)
+        public Google.Apis.Drive.v3.Data.File RenameObject(string objectIdOrLink, string name2)
         {
             Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
             {
                 Name = name2
             };
-            FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, objectId);
+            FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, GetObjectId(objectIdOrLink));
             return updateRequest.Execute();
         }
 
         public const string MoveAll = "ALL";
-        public Google.Apis.Drive.v3.Data.File MoveObject(string objectId, string newParentIds, string removingParentIds = MoveAll)
+        public Google.Apis.Drive.v3.Data.File MoveObject(string objectIdOrLink, string newParentIds, string removingParentIds = MoveAll)
         {
             if (string.IsNullOrWhiteSpace(newParentIds))
                 throw new Exception("newParentIds cannot be empty.");
+            string objectId = GetObjectId(objectIdOrLink);
             FilesResource.UpdateRequest updateRequest = Service.Files.Update(new Google.Apis.Drive.v3.Data.File(), objectId);
             updateRequest.AddParents = newParentIds;
             if (removingParentIds == MoveAll)
@@ -367,15 +368,15 @@ namespace Cliver
             return MoveObject(@object.Id, newParentIds, removingParentIds);
         }
 
-        public Permission TransferOwnership(string objectId, string newOwnerEmail)
+        public Permission TransferOwnership(string objectIdOrLink, string newOwnerEmail)
         {
             Permission permission = new Permission { Type = "user", Role = "owner", EmailAddress = newOwnerEmail };
-            var createRequest = Service.Permissions.Create(permission, objectId);
+            var createRequest = Service.Permissions.Create(permission, GetObjectId(objectIdOrLink));
             createRequest.TransferOwnership = true;
             return createRequest.Execute();
         }
 
-        public Google.Apis.Drive.v3.Data.File SetReadonly(string objectId, bool @readonly)
+        public Google.Apis.Drive.v3.Data.File SetReadonly(string objectIdOrLink, bool @readonly)
         {
             FilesResource.UpdateRequest updateRequest = Service.Files.Update(
                 new Google.Apis.Drive.v3.Data.File
@@ -384,7 +385,7 @@ namespace Cliver
                         new ContentRestriction{ ReadOnly__= @readonly }
                     }
                 },
-                objectId
+                GetObjectId(objectIdOrLink)
                 );
             return updateRequest.Execute();
         }
