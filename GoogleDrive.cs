@@ -15,6 +15,7 @@ using Google.Apis.Util.Store;
 using Google.Apis.Requests;
 using System.Text.RegularExpressions;
 using System.Net.Http;
+using System.Security.Cryptography;
 
 namespace Cliver
 {
@@ -278,11 +279,11 @@ namespace Cliver
         //        }
         //    }
         //}
-        public void ExportDocument(string fileIdOrLink, ExportType exportType, string localFile)
+        public void ExportDocument(string fileLink, ExportType exportType, string localFile)
         {
             //string l = Regex.Replace(fileLink, @"/edit.*", "", RegexOptions.IgnoreCase) + "/gviz/tq?tqx=out:" + exportType + "&sheet=" + System.Web.HttpUtility.UrlEncode(sheetName);!!!produces js with exporting data
 
-            var ids = GoogleSheet.GetSheetIds(GetObjectId(fileIdOrLink));
+            var ids = GoogleSheet.GetIdsFromBookLink(fileLink);
 
             //https://docs.google.com/spreadsheets/d/e/{key}/pub?output=tsv&gid={gid} - !!!404 (probably because not public)
             //string l = "https://docs.google.com/spreadsheets/d/e/" + ids.BookId + "/pub?output=" + System.Web.HttpUtility.UrlEncode(exportType.ToString().ToLower()) + "&gid=" + ids.SheetId;
@@ -315,9 +316,9 @@ namespace Cliver
             {
                 Trashed = true
             };
-            foreach (string oil in objectIdOrLinks)
+            foreach (string objectIdOrLink in objectIdOrLinks)
             {
-                FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, GetObjectId(oil));
+                FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, GetObjectId(objectIdOrLink));
                 batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(updateRequest, callback);
             }
             batchRequest.ExecuteAsync().Wait();

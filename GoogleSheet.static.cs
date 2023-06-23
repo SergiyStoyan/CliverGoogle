@@ -20,19 +20,27 @@ namespace Cliver
 {
     public partial class GoogleSheet
     {
-        public static (string BookId, int SheetId) GetSheetIds(string bookIdOrLink)
+        public static (string BookId, int SheetId) GetIdsFromBookLink(string bookIdOrLink)
         {
             if (!IsBookLink(bookIdOrLink))
                 return (bookIdOrLink, -1);
-            return ExtractSheetIdsFromWebLink(bookIdOrLink);
+            return ExtractIdsFromBookLink(bookIdOrLink);
         }
 
-        public static (string BookId, int SheetId) ExtractSheetIdsFromWebLink(string webLink)
+        /// <summary>
+        /// bookLink must contain book ID and can have sheet ID.
+        /// </summary>
+        /// <param name="bookLink"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public static (string BookId, int SheetId) ExtractIdsFromBookLink(string bookLink)
         {
-            Match m = Regex.Match(webLink.Trim(), @"/(?'BookId'[^/]+)(/(edit|view))?(\#gid\=(?'SheetId'\d+))?$", RegexOptions.IgnoreCase);
+            Match m = Regex.Match(bookLink.Trim(), @"/(?'BookId'[^/]+)(/$|/(edit|view)\#gid\=(?'SheetId'\d+)$)", RegexOptions.IgnoreCase);
             if (!m.Success)
-                throw new Exception("Could not parse the link: " + webLink);
-            return (m.Groups["BookId"].Value, int.Parse(m.Groups["SheetId"].Value));
+                throw new Exception("Could not parse the link: " + bookLink);
+            if (!int.TryParse(m.Groups["SheetId"].Value, out int sheetId))
+                throw new Exception("Could not parse SheetId in the link: " + bookLink);
+            return (m.Groups["BookId"].Value, sheetId);
         }
 
         public static bool IsBookLink(string v)

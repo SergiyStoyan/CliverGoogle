@@ -32,7 +32,7 @@ namespace Cliver
         /// <returns></returns>
         public IList<IList<object>> GetValues(string bookIdOrLink, string range = null)
         {
-            var ids = GetSheetIds(bookIdOrLink);
+            var ids = GetIdsFromBookLink(bookIdOrLink);
             if (ids.SheetId >= 0
                 && (range == null || !range.Contains("!") && range.Contains(":"))//no sheet is specified in the range
                 )
@@ -52,7 +52,7 @@ namespace Cliver
 
         public (string BookName, string SheetName) GetNames(string bookIdOrLink)
         {
-            var ids = GetSheetIds(bookIdOrLink);
+            var ids = GetIdsFromBookLink(bookIdOrLink);
             SpreadsheetsResource.GetRequest request = Service.Spreadsheets.Get(ids.BookId);
             var response = request.Execute();
             return (response.Properties.Title, response.Sheets.FirstOrDefault(a => a.Properties.SheetId == ids.SheetId)?.Properties.Title);
