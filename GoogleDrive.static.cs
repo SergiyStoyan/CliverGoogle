@@ -27,8 +27,8 @@ namespace Cliver
 
         public static string ExtractObjectIdFromWebLink(string webLink)
         {
-            webLink = Regex.Replace(webLink.Trim(), @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase);
-            Match m = Regex.Match(webLink, @"/([^/]+)$", RegexOptions.IgnoreCase);
+            //webLink = Regex.Replace(webLink.Trim(), @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            Match m = Regex.Match(webLink, @"/([^/]+?)((\?|/(edit|view))[^/]*)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             if (!m.Success)
                 throw new Exception("Could not parse the link: " + webLink);
             return m.Groups[1].Value;
@@ -36,7 +36,7 @@ namespace Cliver
 
         public static bool IsObjectLink(string v)
         {
-            return Regex.IsMatch(v.Trim(), @"^\s*https?\://(docs|drive)\.google\.com/", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(v.Trim(), @"^\s*https?\://(docs|drive)\.google\.com/", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
     }
 }

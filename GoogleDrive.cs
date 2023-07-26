@@ -35,7 +35,7 @@ namespace Cliver
         //{
         //}
 
-        const string folderMimeType = "application/vnd.google-apps.folder";
+        public const string FolderMimeType = "application/vnd.google-apps.folder";
 
         public const string RootFolderId = "root";
 
@@ -75,9 +75,9 @@ namespace Cliver
                     qConditions.Add("'" + ParentId + "' in parents");
 
                 if (IsFolder == true)
-                    qConditions.Add("mimeType='" + folderMimeType + "'");
+                    qConditions.Add("mimeType='" + FolderMimeType + "'");
                 else if (IsFolder == false)
-                    qConditions.Add("mimeType!='" + folderMimeType + "'");
+                    qConditions.Add("mimeType!='" + FolderMimeType + "'");
 
                 if (ModifiedTimeMin != null)
                     qConditions.Add("modifiedTime>'" + ModifiedTimeMin?.ToString("yyyy-MM-ddTHH:mm:ss") + "'");

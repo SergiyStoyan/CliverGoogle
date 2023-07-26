@@ -38,6 +38,9 @@ namespace Cliver
             public List<string> Labels = null;
             public List<string> LabelIds = null;
             public string Pattern = null;
+            /// <summary>
+            /// (!)the current API seems not to allow operations on delegated accounts. (Else maybe a special authorization is needed?)
+            /// </summary>
             public string UserId = OwnerMe;
             public DateTime? After;
             public DateTime? Before;

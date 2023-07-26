@@ -55,7 +55,7 @@ namespace Cliver
             Google.Apis.Drive.v3.Data.File f = new Google.Apis.Drive.v3.Data.File
             {
                 Name = folderName,
-                MimeType = folderMimeType,
+                MimeType = FolderMimeType,
                 Parents = parentFolderId != null ? new List<string> { parentFolderId } : null
             };
             var request = Service.Files.Create(f);
