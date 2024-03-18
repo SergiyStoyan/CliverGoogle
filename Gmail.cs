@@ -306,7 +306,7 @@ namespace Cliver
         /// <param name="message"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public Google.Apis.Gmail.v1.Data.Message Send(System.Net.Mail.MailMessage message, string userId = Gmail.SearchFilter.OwnerMe)
+        public Google.Apis.Gmail.v1.Data.Message Send_hacky(System.Net.Mail.MailMessage message, string userId = Gmail.SearchFilter.OwnerMe)
         {
             System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
             System.Reflection.Assembly assembly = typeof(System.Net.Mail.SmtpClient).Assembly;
