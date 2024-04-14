@@ -32,6 +32,8 @@ namespace Cliver
             public bool? Spam = null;//?by default it is passed over by gmail
             public bool? Received = null;
             public bool? HasAttachement = null;
+            public List<string> From = null;
+            //public string To = null;
             /// <summary>
             /// Space separated.
             /// </summary>
@@ -72,6 +74,9 @@ namespace Cliver
                     qConditions.Add("has:attachment");
                 else if (HasAttachement == false)
                     qConditions.Add("-has:attachment");
+
+                if (From != null)
+                    qConditions.Add("from:(" + string.Join(", ", From) + ")");
 
                 if (Received == true)
                     qConditions.Add("-in:sent");
