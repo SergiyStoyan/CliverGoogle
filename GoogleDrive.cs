@@ -124,9 +124,9 @@ namespace Cliver
             } while (pageToken != null);
         }
 
-        public List<string> GetObjectPaths(Google.Apis.Drive.v3.Data.File @object)
+        public List<Path> GetObjectPaths(Google.Apis.Drive.v3.Data.File @object)
         {
-            List<string> paths = new List<string>();
+            List<Path> paths = new List<Path>();
             if (@object.Parents == null || @object.Name == null)
                 @object = GetObject(@object.Id, "id, name, parents");
             buildPaths(paths, null, @object);

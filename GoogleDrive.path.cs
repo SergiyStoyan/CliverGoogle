@@ -20,14 +20,14 @@ namespace Cliver
 {
     public partial class GoogleDrive
     {
-        void buildPaths(List<string> paths, string currentPath, Google.Apis.Drive.v3.Data.File currentObject)
+        void buildPaths(List<Path> paths, Path currentPath, Google.Apis.Drive.v3.Data.File currentObject)
         {
             if (currentObject == null || currentObject.Parents == null || currentObject.Parents.Count < 1)//it is root 'My Drive'
             {
                 paths.Add(currentPath);
                 return;
             }
-            currentPath = currentObject.Name + (string.IsNullOrWhiteSpace(currentPath) ? "" : "\\" + currentPath);
+            currentPath = new Path(null, currentObject.Name + (currentPath == null ? "" : Path.DirectorySeparatorChar + currentPath));
             foreach (string parentId in currentObject.Parents)
                 buildPaths(paths, currentPath, GetObject(parentId, "id, name, parents"));
         }
@@ -38,11 +38,10 @@ namespace Cliver
             GetLatestExistingOrCreate,
             GetLatestExistingOnly,
         }
-        Google.Apis.Drive.v3.Data.File getFolder(string parentFolderIdOrLink, string folderName, GettingMode gettingMode, string fields = "id, webViewLink")
+        Google.Apis.Drive.v3.Data.File getFolder(string parentFolderId, string folderName, GettingMode gettingMode, string fields)
         {
-            if (parentFolderIdOrLink == null && string.IsNullOrEmpty(folderName))//root folder
+            if (parentFolderId == null && string.IsNullOrEmpty(folderName))//root folder
                 return GetObject(RootFolderId, fields);
-            string parentFolderId = GetObjectId(parentFolderIdOrLink);
             if (gettingMode != GettingMode.AlwaysCreateNew)
             {
                 SearchFilter sf = new SearchFilter { IsFolder = true, ParentId = parentFolderId, Name = folderName };
@@ -64,127 +63,127 @@ namespace Cliver
             return request.Execute();
         }
 
-        public Google.Apis.Drive.v3.Data.File GetFolder(string baseFolderIdOrLink, string relativeFolderPath, GettingMode gettingMode, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File GetFolder(Path folder, GettingMode gettingMode, string fields = "id, webViewLink")
         {
-            if (string.IsNullOrEmpty(baseFolderIdOrLink))
-            {
-                if (string.IsNullOrEmpty(relativeFolderPath))//root folder
-                    return GetObject(RootFolderId, fields);
-                baseFolderIdOrLink = RootFolderId;
-            }
-            if (string.IsNullOrEmpty(relativeFolderPath))
-                return GetObject(baseFolderIdOrLink, fields);
+            if (string.IsNullOrEmpty(folder.RelativePath))//root folder
+                return GetObject(folder.BaseFolderId, fields);
 
             if (gettingMode == GettingMode.AlwaysCreateNew
-                || !cache.Get(baseFolderIdOrLink, relativeFolderPath, out Google.Apis.Drive.v3.Data.File @object)
+                || !cache.Get(folder, out Google.Apis.Drive.v3.Data.File @object)
                 || @object == null && gettingMode == GettingMode.GetLatestExistingOrCreate
                 )
             {
-                Match m = Regex.Match(relativeFolderPath, @"^(.+?)\\(.+)$");
-                if (m.Success)
+                Path folder2;
+                if (folder.SplitRelativePath(out string rf, out string folderName))
                 {
-                    Google.Apis.Drive.v3.Data.File parentFolder = getFolder(baseFolderIdOrLink, m.Groups[1].Value, gettingMode == GettingMode.AlwaysCreateNew ? GettingMode.GetLatestExistingOrCreate : gettingMode, fields);
+                    Google.Apis.Drive.v3.Data.File parentFolder = GetFolder(new Path(folder.BaseFolderId, rf), gettingMode == GettingMode.AlwaysCreateNew ? GettingMode.GetLatestExistingOrCreate : gettingMode, fields);
                     if (parentFolder == null)
                         return null;
-                    @object = GetFolder(parentFolder.Id, m.Groups[2].Value, gettingMode, fields);
+                    folder2 = new Path(parentFolder.Id, folderName);
                 }
                 else
-                    @object = getFolder(baseFolderIdOrLink, relativeFolderPath, gettingMode, fields);
-                cache.Set(baseFolderIdOrLink, relativeFolderPath, @object);
+                    folder2 = folder;
+                @object = getFolder(folder2.BaseFolderId, folder2.RelativePath, gettingMode, fields);
+                cache.Set(folder2, @object);
+                if (folder2.Key != folder.Key)
+                    cache.Set(folder, @object);
             }
             return @object;
         }
 
-        public Google.Apis.Drive.v3.Data.File GetFolder(string folderPath, GettingMode gettingMode, string fields = "id, webViewLink")
-        {
-            return GetFolder(null, folderPath, gettingMode, fields);
-        }
-
         class Cache
         {
-            public bool Get(string baseFolderIdOrLink, string relativeFolderPath, out Google.Apis.Drive.v3.Data.File @object)
-            {
-                return Get(new Path(baseFolderIdOrLink, relativeFolderPath), out @object);
-            }
-
             public bool Get(Path path, out Google.Apis.Drive.v3.Data.File @object)
             {
                 return paths2object.TryGetValue(path.Key, out @object);
             }
 
-            public void Set(string baseFolderIdOrLink, string relativeFolderPath, Google.Apis.Drive.v3.Data.File @object)
-            {
-                Set(new Path(baseFolderIdOrLink, relativeFolderPath), @object);
-            }
-
             public void Set(Path path, Google.Apis.Drive.v3.Data.File @object)
             {
-                paths2object[path.Key] = @object;
-                //SetPath(@object.Id, path.Key);
+                if (@object != null)
+                    paths2object[path.Key] = @object;
             }
+
             Dictionary<string, Google.Apis.Drive.v3.Data.File> paths2object = new Dictionary<string, Google.Apis.Drive.v3.Data.File>();
-
-            //public bool GetPath(string objectId, out string path)
-            //{
-            //    return objectIds2path.TryGetValue(objectId, out path);
-            //}
-
-            //public void SetPath(string objectId, string path)
-            //{
-            //    objectIds2path[objectId] = path;
-            //}
-            //Dictionary<string, string> objectIds2path = new Dictionary<string, string>();
         }
         readonly Cache cache = new Cache();
-        class Path
+        public class Path
         {
+            public string BaseFolderLinkOrId { get; private set; }
             public string BaseFolderId { get; private set; }
-            public string RelativeFolderPath { get; private set; }
+            public string RelativePath { get; private set; }
             public string Key { get; private set; }
+
+            public const string DirectorySeparatorChar = @"\";
+
+            public override string ToString()
+            {
+                return Key;
+            }
 
             public Path(string baseFolderIdOrLink, string relativeFolderPath)
             {
-                BaseFolderId = GetObjectId(baseFolderIdOrLink);
-                RelativeFolderPath = Regex.Replace(relativeFolderPath, @"\\{2,}", @"\").Trim().Trim('\\');
-                Key = BaseFolderId + @"\\" + RelativeFolderPath;
+                //if (relativeFolderPath.Contains(DirectorySeparatorChar))
+                //    throw new Exception2(nameof(GoogleDrive.Path) + " cannot contain " + DirectorySeparatorChar);
+                BaseFolderLinkOrId = baseFolderIdOrLink;
+                if (string.IsNullOrEmpty(baseFolderIdOrLink))
+                    BaseFolderId = RootFolderId;
+                else
+                    BaseFolderId = GetObjectId(baseFolderIdOrLink);
+                if (relativeFolderPath != null)
+                    RelativePath = Regex.Replace(relativeFolderPath, @"\\{2,}", @"\").Trim().Trim('\\');
+                Key = BaseFolderId + @"\\" + RelativePath;
             }
 
-            //internal Path(string pathKey)
+            public Path GetDescendant(string relativeDescendantPath)
+            {
+                return new Path(BaseFolderId, RelativePath + DirectorySeparatorChar + relativeDescendantPath);
+            }
+
+            //public Path(string pathKey)
             //{
             //    Key = pathKey;
-            //    int i = pathKey.IndexOf("\\\\");
+            //    int i = pathKey.IndexOf(@"\\");
             //    if (i >= 0)
             //    {
             //        BaseFolderId = pathKey.Substring(0, i);
-            //        RelativeFolderPath = pathKey.Substring(i + 2);
+            //        RelativePath = pathKey.Substring(i + 2);
             //    }
             //    else
-            //        RelativeFolderPath = pathKey;
+            //        RelativePath = pathKey;
             //}
+
+            public bool SplitRelativePath(out string relativeFolder, out string objectName)
+            {
+                if (RelativePath == null)
+                    throw new Exception2(nameof(RelativePath) + " is NULL and cannot be split.");
+                Match m = Regex.Match(RelativePath, @"(.*)\\([^\\]+)$");
+                if (m.Success)
+                {
+                    relativeFolder = m.Groups[1].Value;
+                    objectName = m.Groups[2].Value;
+                    return true;
+                }
+                relativeFolder = null;
+                objectName = RelativePath;
+                return false;
+            }
         }
 
-        public Google.Apis.Drive.v3.Data.File GetFile(string baseFolderId, string relativeFilePath, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File GetFile(Path file, string fields = "id, webViewLink")
         {
-            if (!cache.Get(baseFolderId, relativeFilePath, out Google.Apis.Drive.v3.Data.File @object))
+            if (!cache.Get(file, out Google.Apis.Drive.v3.Data.File @object))
             {
-                Match m = Regex.Match(relativeFilePath, @"^(.+)\\[^\\]*$");
-                string parentRelativeFolderPath = m.Success ? m.Groups[1].Value : null;
-                Google.Apis.Drive.v3.Data.File parentFolder = GetFolder(baseFolderId, parentRelativeFolderPath, GettingMode.GetLatestExistingOnly);
+                file.SplitRelativePath(out string parentRelativeFolderPath, out string fileName);
+                Google.Apis.Drive.v3.Data.File parentFolder = GetFolder(new Path(file.BaseFolderId, parentRelativeFolderPath), GettingMode.GetLatestExistingOnly);
                 if (parentFolder == null)
                     return null;
-                string fileName = m.Success ? m.Groups[2].Value : null;
                 SearchFilter sf = new SearchFilter { IsFolder = false, ParentId = parentFolder.Id, Name = fileName };
                 IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
                 @object = fs.FirstOrDefault();
-                if (@object != null)
-                    cache.Set(baseFolderId, relativeFilePath, @object);
+                cache.Set(file, @object);
             }
             return @object;
-        }
-
-        public Google.Apis.Drive.v3.Data.File GetFile(string filePath, string fields = "id, webViewLink")
-        {
-            return GetFile(null, filePath, fields);
         }
 
         //public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
@@ -233,14 +232,13 @@ namespace Cliver
         //    return UploadFileByPath(localFile, remoteFolderIdOrLink, remoteFileName, contentType, updateExisting, fields);
         //}
 
-        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteBaseFolderId, string remoteRelativeFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, Path remotefile, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
-            Match m = Regex.Match(remoteRelativeFilePath, @"^(.+)\\[^\\]*$");
-            string remoteRelativeFolderPath = m.Success ? m.Groups[1].Value : null;
-            Google.Apis.Drive.v3.Data.File folder = GetFolder(remoteBaseFolderId, remoteRelativeFolderPath, GettingMode.GetLatestExistingOrCreate, fields);
+            remotefile.SplitRelativePath(out string remoteRelativeFolderPath, out string fileName);
+            Google.Apis.Drive.v3.Data.File folder = GetFolder(new Path(remotefile.BaseFolderId, remoteRelativeFolderPath), GettingMode.GetLatestExistingOrCreate, fields);
             Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
             {
-                Name = PathRoutines.GetFileName(m.Success ? m.Groups[2].Value : remoteRelativeFilePath),
+                Name = PathRoutines.GetFileName(fileName),
                 //MimeType = getMimeType(localFile), 
                 //Description=,
             };
@@ -289,23 +287,13 @@ namespace Cliver
             return mimeType;
         }
 
-        public Google.Apis.Drive.v3.Data.File UploadFileByPath(string localFile, string remoteFilePath, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File DownloadFile(Path remoteFile, string localFile)
         {
-            return UploadFile(localFile, null, remoteFilePath, contentType, updateExisting, fields);
-        }
-
-        public Google.Apis.Drive.v3.Data.File DownloadFile(string remoteBaseFolderId, string remoteRelativeFilePath, string localFile)
-        {
-            Google.Apis.Drive.v3.Data.File file = GetFile(remoteBaseFolderId, remoteRelativeFilePath);
+            Google.Apis.Drive.v3.Data.File file = GetFile(remoteFile);
             if (file == null)
                 return null;
             DownloadFile(file.Id, localFile);
             return file;
-        }
-
-        public Google.Apis.Drive.v3.Data.File DownloadFileByPath(string remoteFilePath, string localFile)
-        {
-            return DownloadFile(null, remoteFilePath, localFile);
         }
     }
 }
