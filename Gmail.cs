@@ -80,19 +80,19 @@ namespace Cliver
                     qConditions.Add("from:(" + string.Join(", ", From) + ")");
 
                 if (Received == true)
-                    qConditions.Add("-in:received");
+                    qConditions.Add("in:inbox");
                 else if (Received == false)
-                    qConditions.Add("not -in:received");
+                    qConditions.Add("-in:inbox");
 
                 if (Sent == true)
                     qConditions.Add("in:sent");
                 else if (Sent == false)
-                    qConditions.Add("not in:sent");
+                    qConditions.Add("-in:sent");
 
                 if (Spam == true)
                     qConditions.Add("in:anywhere");
                 else if (Spam == false)
-                    qConditions.Add("not in:anywhere");
+                    qConditions.Add("-in:anywhere");
 
                 //All dates used in the search query are interpreted as midnight on that date in the PST timezone. To specify accurate dates for other timezones pass the value in seconds instead.
                 if (After != null)
