@@ -87,7 +87,7 @@ namespace Cliver
                         catch (Exception e)
                         {
                             Log.Error("Could not get the google account info. Make sure that the respective permission scopes are provided.", e);
-                            googleAccount = "<not available>";
+                            googleAccount = GoogleAccountNotAvailableName;
                         }
                         if (GoogleSettings.GoogleAccount != googleAccount)
                         {
@@ -100,6 +100,8 @@ namespace Cliver
                 }
             }
         }
+
+        public const string GoogleAccountNotAvailableName = "<not available>";
 
         public Action OnInteractiveAuthentication = null;
 
