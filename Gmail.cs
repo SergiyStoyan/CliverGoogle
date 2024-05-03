@@ -264,7 +264,7 @@ namespace Cliver
             AddLabels(message, null, new List<string> { DefaultLabels.Unread.Id });
         }
 
-        public IEnumerable<Google.Apis.Gmail.v1.Data.Label> GetLabels(string userId = Gmail.SearchFilter.OwnerMe)
+        public IEnumerable<Label> GetLabels(string userId = SearchFilter.OwnerMe)
         {
             UsersResource.LabelsResource.ListRequest request = Service.Users.Labels.List(userId);
             ListLabelsResponse rr = request.Execute();
@@ -275,13 +275,13 @@ namespace Cliver
                 yield return l;
         }
 
-        public Profile GetUserProfile(string userId = Gmail.SearchFilter.OwnerMe)
+        public Profile GetUserProfile(string userId = SearchFilter.OwnerMe)
         {
             UsersResource.GetProfileRequest r = Service.Users.GetProfile(userId);
             return r.Execute();
         }
 
-        public string GetUserMainEmail(string userId = Gmail.SearchFilter.OwnerMe)
+        public string GetUserMainEmail(string userId = SearchFilter.OwnerMe)
         {
             return GetUserProfile(userId)?.EmailAddress;
         }
@@ -298,7 +298,7 @@ namespace Cliver
                 rm += $"\r\nFrom: {message.From}";
             rm += $"\r\nSubject: {message.Subject}\r\nContent-Type: text/html;charset=utf-8\r\n\r\n{message.Body}";
             if (string.IsNullOrEmpty(message.UserId))
-                message.UserId = Gmail.SearchFilter.OwnerMe;
+                message.UserId = SearchFilter.OwnerMe;
             return send(Base64UrlEncode(rm), message.UserId);
         }
 
@@ -308,7 +308,7 @@ namespace Cliver
             return Convert.ToBase64String(data).Replace("+", "-").Replace("/", "_").Replace("=", "");
         }
 
-        Google.Apis.Gmail.v1.Data.Message send(string raw, string userId = Gmail.SearchFilter.OwnerMe)
+        Google.Apis.Gmail.v1.Data.Message send(string raw, string userId = SearchFilter.OwnerMe)
         {
             Google.Apis.Gmail.v1.Data.Message m = new Google.Apis.Gmail.v1.Data.Message { Raw = raw };
             UsersResource.MessagesResource.SendRequest request = Service.Users.Messages.Send(m, userId);
@@ -321,7 +321,7 @@ namespace Cliver
         /// <param name="message"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public Google.Apis.Gmail.v1.Data.Message Send_hacky(System.Net.Mail.MailMessage message, string userId = Gmail.SearchFilter.OwnerMe)
+        public Google.Apis.Gmail.v1.Data.Message Send_hacky(System.Net.Mail.MailMessage message, string userId = SearchFilter.OwnerMe)
         {
             System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
             System.Reflection.Assembly assembly = typeof(System.Net.Mail.SmtpClient).Assembly;

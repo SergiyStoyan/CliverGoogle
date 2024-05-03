@@ -194,5 +194,14 @@ namespace Cliver
             s.Loaded();
             return s;
         }
+
+        /// <summary>
+        /// Used to store GoogleDrive.Path is Settings
+        /// </summary>
+        public class GoogleDrivePath
+        {
+            public string BaseFolderIdOrLink;
+            public string RelativeFolderPath;
+        }
     }
 }
