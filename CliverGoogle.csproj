@@ -8,7 +8,7 @@
 	  <Copyright>Sergiy Stoyan</Copyright>
 	  <Authors>Sergiy Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>5.3.0</Version>
+	  <Version>5.4.0</Version>
 	  <PackageProjectUrl>https://github.com/sergiystoyan/CliverGoogleRoutines</PackageProjectUrl>
 	  <Description>	  </Description>
 	  <PackageTags>google API</PackageTags>
@@ -29,11 +29,11 @@
 
   <ItemGroup>
     <PackageReference Include="CliverRoutines" Version="6.49.1" />
-    <PackageReference Include="Google.Apis.Drive.v3" Version="1.57.0.2789" />
-    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.57.0.2650" />
-    <PackageReference Include="Google.Apis.Script.v1" Version="1.57.0.2638" />
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.57.0.2826" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.5.21301.5" />
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3428" />
+    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.68.0.3427" />
+    <PackageReference Include="Google.Apis.Script.v1" Version="1.68.0.3294" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.68.0.3421" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
   </ItemGroup>
 
 </Project>
