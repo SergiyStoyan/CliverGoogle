@@ -21,6 +21,9 @@ namespace Cliver
             System.Net.HttpStatusCode.BadRequest,
         };
 
+        static public int DefaultPollMinNumber = 3;
+        static public int DefaultPollSpanMss = 10000;
+
         /// <summary>
         /// Trier adapted for google API requests. Can be used as a framework.
         /// </summary>
@@ -28,11 +31,16 @@ namespace Cliver
         /// <param name="logMessage"></param>
         /// <param name="function"></param>
         /// <param name="pollMinNumber"></param>
+        /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
         /// <returns></returns>
         /// <exception cref="Exception2"></exception>
-        public static T Try<T>(string logMessage, Func<T> function, int pollMinNumber = 3, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        public static T Try<T>(string logMessage, Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
         {
+            if (pollMinNumber < 0)
+                pollMinNumber = DefaultPollMinNumber;
+            if (pollSpanMss < 0)
+                pollSpanMss = DefaultPollSpanMss;
             if (additionalRetriableHttpCodes != null)
                 RetriableHttpCodes.AddRange(additionalRetriableHttpCodes);
             if (logMessage != null)
@@ -54,7 +62,7 @@ namespace Cliver
                         throw;
                     }
                 },
-                0, 0, false, pollMinNumber
+                0, pollSpanMss, false, pollMinNumber
             );
             if (o == null)
             {
@@ -70,11 +78,12 @@ namespace Cliver
         /// <typeparam name="T"></typeparam>
         /// <param name="function"></param>
         /// <param name="pollMinNumber"></param>
+        /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
         /// <returns></returns>
-        public static T Try<T>(Func<T> function, int pollMinNumber = 3, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        public static T Try<T>(Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
         {
-            return Try(null, function, pollMinNumber, additionalRetriableHttpCodes);
+            return Try(null, function, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
         }
 
         /// <summary>
@@ -83,10 +92,11 @@ namespace Cliver
         /// <param name="logMessage"></param>
         /// <param name="action"></param>
         /// <param name="pollMinNumber"></param>
+        /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
-        public static void Try(string logMessage, Action action, int pollMinNumber = 3, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+        public static void Try(string logMessage, Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
         {
-            Try(logMessage, () => { action(); return new Object(); }, pollMinNumber, additionalRetriableHttpCodes);
+            Try(logMessage, () => { action(); return new Object(); }, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
         }
 
         /// <summary>
@@ -94,10 +104,11 @@ namespace Cliver
         /// </summary>
         /// <param name="action"></param>
         /// <param name="pollMinNumber"></param>
+        /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
-        public static void Try(Action action, int pollMinNumber = 3, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+        public static void Try(Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
         {
-            Try(null, action, pollMinNumber, additionalRetriableHttpCodes);
+            Try(null, action, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
         }
     }
 }
