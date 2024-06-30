@@ -174,7 +174,7 @@ namespace Cliver
             var f = request.Execute();
             if (f == null)
                 throw new Exception("File does not exist: " + fileIdOrLink);
-            string localFile = localFolder + Path.DirectorySeparatorChar + PathRoutines.GetLegalizedFileName(f.Name);
+            string localFile = localFolder + System.IO.Path.DirectorySeparatorChar + PathRoutines.GetLegalizedFileName(f.Name);
             using (MemoryStream ms = new MemoryStream())
             {
                 var progress = request.DownloadWithStatus(ms);
