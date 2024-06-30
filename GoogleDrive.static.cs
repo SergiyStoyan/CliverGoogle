@@ -27,8 +27,7 @@ namespace Cliver
 
         public static string ExtractObjectIdFromWebLink(string webLink)
         {
-            //webLink = Regex.Replace(webLink.Trim(), @"/(edit|view)[^/]*\s*$", "", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            Match m = Regex.Match(webLink, @"/([^/]+?)((\?|/(edit|view))[^/]*)\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            Match m = Regex.Match(webLink.Trim(), @"\.google\.com.*?/([^/]+?)((\?|/(edit|view))[^/]*)?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             if (!m.Success)
                 throw new Exception("Could not parse the link: " + webLink);
             return m.Groups[1].Value;
