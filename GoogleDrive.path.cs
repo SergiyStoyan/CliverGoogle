@@ -388,7 +388,7 @@ namespace Cliver
                 return UpdateFile(localFile, remotefile.BaseObjectId, PathRoutines.GetFileName(localFile), contentType, fields);
 
             string folderId = GetFolder(new Path(remotefile.BaseObjectId, remoteRelativeFolderPath), GettingMode.GetLatestExistingOrCreate).Id;
-            
+
             if (string.IsNullOrWhiteSpace(fileName))
                 fileName = PathRoutines.GetFileName(localFile);
             Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File

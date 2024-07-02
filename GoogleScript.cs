@@ -74,14 +74,9 @@ namespace Cliver
             if (operation.Error != null)
             {
                 string message = "Server error: " + operation.Error.ToStringByJson();
-                throw new Exception(message);
+                throw new GoogleException(message);
             }
             return operation.Response["result"];
-        }
-
-        public class Exception : System.Exception
-        {
-            public Exception(string message) : base(message) { }
         }
 
         ///// <summary>

@@ -11,18 +11,18 @@ using System.Text.RegularExpressions;
 namespace Cliver
 {
     /// <summary>
-    /// Experimental helper class. Must be considered as a framework.
+    /// Trier base class adapted for Google API
     /// </summary>
-    public class Google_
+    public class GoogleTrier
     {
-        public static List<System.Net.HttpStatusCode> RetriableHttpCodes = new List<System.Net.HttpStatusCode> {
+        virtual public List<System.Net.HttpStatusCode> RetriableHttpCodes { get; } = new List<System.Net.HttpStatusCode> {
             System.Net.HttpStatusCode.InternalServerError,
             System.Net.HttpStatusCode.Gone,
             System.Net.HttpStatusCode.BadRequest,
         };
 
-        static public int DefaultPollMinNumber = 3;
-        static public int DefaultPollSpanMss = 10000;
+        virtual public int DefaultPollMinNumber { get; } = 3;
+        virtual public int DefaultPollSpanMss { get; } = 10000;
 
         /// <summary>
         /// Trier adapted for google API requests. Can be used as a framework.
@@ -35,14 +35,15 @@ namespace Cliver
         /// <param name="additionalRetriableHttpCodes"></param>
         /// <returns></returns>
         /// <exception cref="Exception2"></exception>
-        public static T Try<T>(string logMessage, Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        virtual public T Run<T>(string logMessage, Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
         {
             if (pollMinNumber < 0)
                 pollMinNumber = DefaultPollMinNumber;
             if (pollSpanMss < 0)
                 pollSpanMss = DefaultPollSpanMss;
+            List<System.Net.HttpStatusCode> retriableHttpCodes = RetriableHttpCodes;
             if (additionalRetriableHttpCodes != null)
-                RetriableHttpCodes.AddRange(additionalRetriableHttpCodes);
+                retriableHttpCodes.AddRange(additionalRetriableHttpCodes);
             if (logMessage != null)
                 Log.Inform(logMessage);
             T o = SleepRoutines.WaitForObject(
@@ -52,13 +53,14 @@ namespace Cliver
                     {
                         return function();
                     }
-                    catch (Google.GoogleApiException ex)
+                    catch (Exception e)
                     {
-                        if (RetriableHttpCodes.Contains(ex.HttpStatusCode))
-                        {
-                            Log.Warning2("Retrying...", ex);
-                            return null;
-                        }
+                        for (; e != null; e = e.InnerException)
+                            if (e is Google.GoogleApiException ex && retriableHttpCodes.Contains(ex.HttpStatusCode))
+                            {
+                                Log.Warning2("Retrying...\r\n" + logMessage, e);
+                                return null;
+                            }
                         throw;
                     }
                 },
@@ -66,7 +68,7 @@ namespace Cliver
             );
             if (o == null)
             {
-                string m = logMessage != null ? Regex.Replace(logMessage, @"\.\.\.", "") : nameof(Google_) + "." + nameof(Try) + "()";
+                string m = logMessage != null ? Regex.Replace(logMessage, @"\.\.\.", "") : nameof(GoogleTrier) + "." + nameof(Run) + "()";
                 throw new Exception2("Failed: " + m);
             }
             return o;
@@ -81,9 +83,9 @@ namespace Cliver
         /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
         /// <returns></returns>
-        public static T Try<T>(Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        virtual public T Run<T>(Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
         {
-            return Try(null, function, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
+            return Run(null, function, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
         }
 
         /// <summary>
@@ -94,9 +96,9 @@ namespace Cliver
         /// <param name="pollMinNumber"></param>
         /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
-        public static void Try(string logMessage, Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+        virtual public void Run(string logMessage, Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
         {
-            Try(logMessage, () => { action(); return new Object(); }, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
+            Run(logMessage, () => { action(); return new Object(); }, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
         }
 
         /// <summary>
@@ -106,9 +108,9 @@ namespace Cliver
         /// <param name="pollMinNumber"></param>
         /// <param name="pollSpanMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
-        public static void Try(Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+        virtual public void Run(Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
         {
-            Try(null, action, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
+            Run(null, action, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
         }
     }
 }
