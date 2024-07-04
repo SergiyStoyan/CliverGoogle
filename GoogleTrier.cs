@@ -21,8 +21,8 @@ namespace Cliver
             System.Net.HttpStatusCode.BadRequest,
         };
 
-        virtual public int DefaultPollMinNumber { get; } = 3;
-        virtual public int DefaultPollSpanMss { get; } = 10000;
+        virtual public int DefaultTryMaxNumber { get; } = 3;
+        virtual public int DefaultRetryDelayMss { get; } = 10000;
 
         /// <summary>
         /// Trier adapted for google API requests. Can be used as a framework.
@@ -30,17 +30,17 @@ namespace Cliver
         /// <typeparam name="T"></typeparam>
         /// <param name="logMessage"></param>
         /// <param name="function"></param>
-        /// <param name="pollMinNumber"></param>
-        /// <param name="pollSpanMss"></param>
+        /// <param name="maxTryNumber"></param>
+        /// <param name="retryDelayMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
         /// <returns></returns>
         /// <exception cref="Exception2"></exception>
-        virtual public T Run<T>(string logMessage, Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        virtual public T Run<T>(string logMessage, Func<T> function, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
         {
-            if (pollMinNumber < 0)
-                pollMinNumber = DefaultPollMinNumber;
-            if (pollSpanMss < 0)
-                pollSpanMss = DefaultPollSpanMss;
+            if (maxTryNumber < 0)
+                maxTryNumber = DefaultTryMaxNumber;
+            if (retryDelayMss < 0)
+                retryDelayMss = DefaultRetryDelayMss;
             List<System.Net.HttpStatusCode> retriableHttpCodes = RetriableHttpCodes;
             if (additionalRetriableHttpCodes != null)
                 retriableHttpCodes.AddRange(additionalRetriableHttpCodes);
@@ -64,7 +64,7 @@ namespace Cliver
                         throw;
                     }
                 },
-                0, pollSpanMss, false, pollMinNumber
+                0, retryDelayMss, false, maxTryNumber
             );
             if (o == null)
             {
@@ -79,13 +79,13 @@ namespace Cliver
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="function"></param>
-        /// <param name="pollMinNumber"></param>
-        /// <param name="pollSpanMss"></param>
+        /// <param name="maxTryNumber"></param>
+        /// <param name="retryDelayMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
         /// <returns></returns>
-        virtual public T Run<T>(Func<T> function, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        virtual public T Run<T>(Func<T> function, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
         {
-            return Run(null, function, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
+            return Run(null, function, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
         }
 
         /// <summary>
@@ -93,24 +93,24 @@ namespace Cliver
         /// </summary>
         /// <param name="logMessage"></param>
         /// <param name="action"></param>
-        /// <param name="pollMinNumber"></param>
-        /// <param name="pollSpanMss"></param>
+        /// <param name="maxTryNumber"></param>
+        /// <param name="retryDelayMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
-        virtual public void Run(string logMessage, Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+        virtual public void Run(string logMessage, Action action, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
         {
-            Run(logMessage, () => { action(); return new Object(); }, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
+            Run(logMessage, () => { action(); return new Object(); }, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
         }
 
         /// <summary>
         /// Trier adapted for google API requests. Can be used as a framework.
         /// </summary>
         /// <param name="action"></param>
-        /// <param name="pollMinNumber"></param>
-        /// <param name="pollSpanMss"></param>
+        /// <param name="maxTryNumber"></param>
+        /// <param name="retryDelayMss"></param>
         /// <param name="additionalRetriableHttpCodes"></param>
-        virtual public void Run(Action action, int pollMinNumber = -1, int pollSpanMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+        virtual public void Run(Action action, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
         {
-            Run(null, action, pollMinNumber, pollSpanMss, additionalRetriableHttpCodes);
+            Run(null, action, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
         }
     }
 }
