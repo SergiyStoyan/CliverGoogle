@@ -35,7 +35,7 @@ namespace Cliver
         /// <exception cref="Exception"></exception>
         public static (string BookId, int SheetId) ExtractIdsFromBookLink(string bookLink)
         {
-            Match m = Regex.Match(bookLink.Trim(), @"/(?'BookId'[^/]+)(/$|/(edit|view)\#gid\=(?'SheetId'\d+)$)", RegexOptions.IgnoreCase);
+            Match m = Regex.Match(bookLink.Trim(), @"/(?'BookId'[^/]+)(/$|/(edit|view)(\?|\#)gid\=(?'SheetId'\d+))", RegexOptions.IgnoreCase);
             if (!m.Success)
                 throw new Exception("Could not parse the link: " + bookLink);
             if (!int.TryParse(m.Groups["SheetId"].Value, out int sheetId))
