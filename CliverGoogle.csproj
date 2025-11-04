@@ -8,7 +8,7 @@
 	  <Copyright>Sergiy Stoyan</Copyright>
 	  <Authors>Sergiy Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>5.5.2</Version>
+	  <Version>5.5.3</Version>
 	  <PackageProjectUrl>https://github.com/sergiystoyan/CliverGoogleRoutines</PackageProjectUrl>
 	  <Description>4.12.0 =&gt; 5.4.3
 - GoogleDrivePath introduced;
@@ -33,11 +33,11 @@
 	</PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CliverRoutines" Version="6.49.1" />
-    <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3428" />
-    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.68.0.3427" />
-    <PackageReference Include="Google.Apis.Script.v1" Version="1.68.0.3294" />
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.68.0.3421" />
+    <PackageReference Include="CliverRoutines" Version="6.55.0" />
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.72.0.3944" />
+    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.70.0.3833" />
+    <PackageReference Include="Google.Apis.Script.v1" Version="1.70.0.3888" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
   </ItemGroup>
 
