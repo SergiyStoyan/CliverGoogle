@@ -20,7 +20,7 @@ namespace Cliver
         /// <summary>
         /// Application name which is passed to google.
         /// </summary>
-        [JsonIgnore]
+        //[JsonIgnore]
         public virtual string ApplicationName { get; } = Assembly.GetEntryAssembly().GetProduct();
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Cliver
         /// <summary>
         /// Permission scopes for the application.
         /// </summary>
-        [JsonIgnore]
+        //[JsonIgnore]
         public abstract string[] Scopes { get; }
 
         /// <summary>
@@ -198,10 +198,15 @@ namespace Cliver
         /// <summary>
         /// Used to store GoogleDrive.Path is Settings
         /// </summary>
-        public class GoogleDrivePath
-        {
-            public string BaseFolderIdOrLink;
-            public string RelativeFolderPath;
-        }
+        //public class GoogleDrivePath
+        //{
+        //    public string BaseFolderIdOrLink;
+        //    public string RelativeFolderPath;
+
+        //    public GoogleDrive.Path Path()
+        //    {
+        //        return new GoogleDrive.Path(BaseFolderIdOrLink, RelativeFolderPath);
+        //    }
+        //}
     }
 }

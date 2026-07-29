@@ -62,6 +62,8 @@ namespace Cliver
             public bool? IncludeItemsFromAllDrives = null;
             public bool? SupportsAllDrives = null;
 
+            public string OrderBy = null;// "modifiedTime desc";
+
             public const string OwnerMe = "me";
 
             internal string GetRequest()
@@ -105,7 +107,7 @@ namespace Cliver
                 request.Q = requestQ;
                 request.IncludeItemsFromAllDrives = searchFilter.IncludeItemsFromAllDrives;
                 request.SupportsAllDrives = searchFilter.SupportsAllDrives;
-                //request.OrderBy = "modifiedTime desc";
+                request.OrderBy = searchFilter.OrderBy;
                 //request.Spaces = "drive";
                 //request.Spaces = "appDataFolder";
                 request.PageToken = pageToken;
@@ -175,19 +177,7 @@ namespace Cliver
             if (f == null)
                 throw new Exception("File does not exist: " + fileIdOrLink);
             string localFile = localFolder + System.IO.Path.DirectorySeparatorChar + PathRoutines.GetLegalizedFileName(f.Name);
-            using (MemoryStream ms = new MemoryStream())
-            {
-                var progress = request.DownloadWithStatus(ms);
-                using (FileStream fs = new FileStream(localFile, FileMode.Create, FileAccess.Write))
-                {
-                    ms.WriteTo(fs);
-                    fs.Flush();
-                }
-                if (progress.Exception != null)
-                    throw progress.Exception;
-                if (progress.Status == Google.Apis.Download.DownloadStatus.Failed)
-                    throw new Exception(Log.GetThisMethodName() + " got status " + progress.Status);
-            }
+            DownloadFile(fileIdOrLink, localFile);
             return localFile;
         }
 
@@ -197,6 +187,67 @@ namespace Cliver
             if (!m.Success)
                 throw new Exception("Uri: " + file + " is not a google file link.");
             DownloadFile(m.Groups[1].Value, localFile);
+        }
+
+        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        {
+            if (string.IsNullOrWhiteSpace(remoteFileName))
+                remoteFileName = PathRoutines.GetFileName(localFile);
+            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+            {
+                Name = remoteFileName,
+                //MimeType = getMimeType(localFile), 
+                //Description=,
+            };
+            string remoteFolderId = GetObjectId(remoteFolderIdOrLink);
+            using (FileStream fileStream = new FileStream(localFile, FileMode.Open, FileAccess.Read))
+            {
+                if (updateExisting)
+                {
+                    SearchFilter sf = new SearchFilter { IsFolder = false, ParentId = remoteFolderId, Name = file.Name };
+                    IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
+                    Google.Apis.Drive.v3.Data.File f = fs.FirstOrDefault();
+                    if (f != null)
+                    {
+                        FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                        updateMediaUpload.Fields = getProperFields(fields);
+                        Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
+                        if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
+                            throw new Exception("Uploading file failed.", uploadProgress.Exception);
+                        if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
+                            throw new Exception("Uploading file has not been completed.");
+                        return updateMediaUpload.ResponseBody;
+                    }
+                }
+                {
+                    file.Parents = new List<string>
+                    {
+                        remoteFolderId
+                    };
+                    FilesResource.CreateMediaUpload createMediaUpload = Service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
+                    createMediaUpload.Fields = getProperFields(fields);
+                    Google.Apis.Upload.IUploadProgress uploadProgress = createMediaUpload.Upload();
+                    if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
+                        throw new Exception("Uploading file failed.", uploadProgress.Exception);
+                    if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
+                        throw new Exception("Uploading file has not been completed.");
+                    return createMediaUpload.ResponseBody;
+                }
+            }
+        }
+        static string getMimeType(string fileName)
+        {
+            string mimeType = "application/unknown";
+            string ext = System.IO.Path.GetExtension(fileName).ToLower();
+            Microsoft.Win32.RegistryKey regKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(ext);
+            if (regKey != null && regKey.GetValue("Content Type") != null)
+                mimeType = regKey.GetValue("Content Type").ToString();
+            return mimeType;
+        }
+
+        public Google.Apis.Drive.v3.Data.File UploadFile2Folder(string localFile, string remoteFolderLinkOrId, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        {
+            return UploadFile(localFile, remoteFolderLinkOrId, null, contentType, updateExisting, fields);
         }
 
         public Google.Apis.Drive.v3.Data.File UpdateFile(string localFile, string remoteFileIdOrLink, string remoteFileName = null, string contentType = null, string fields = "id, webViewLink")
@@ -221,6 +272,68 @@ namespace Cliver
                     throw new Exception("Uploading file has not been completed.");
                 return updateMediaUpload.ResponseBody;
             }
+        }
+
+        //public Google.Apis.Drive.v3.Data.File LockFile(string fileIdOrLink, bool @lock)
+        //{
+        //    //Google.Apis.Drive.v3.Data.File f = GetObject(fileIdOrLink, "id, webViewLink, contentRestrictions");
+        //    //if (f == null)
+        //    //    throw new Exception("Remote file does not exist: " + fileIdOrLink);
+        //    //if (f.ContentRestrictions == null)
+        //    //    throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
+        //    //if (f.ContentRestrictions.FirstOrDefault(a => a.ReadOnly__ == @lock) != null)
+        //    //    return f;
+        //    Google.Apis.Drive.v3.Data.File f = new Google.Apis.Drive.v3.Data.File();
+        //    f.ContentRestrictions.Add(new ContentRestriction { ReadOnly__ = @lock,  });
+
+        //    FilesResource.UpdateRequest request = Service.Files.Update(f, GetObjectId(fileIdOrLink));
+        //    request.Fields = "id, webViewLink, contentRestrictions";
+        //    f = request.Execute();
+        //    if (f == null)
+        //        throw new Exception("Remote file does not exist: " + fileIdOrLink);
+        //    if (f.ContentRestrictions == null)
+        //        throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
+        //    var cr = f.ContentRestrictions.FirstOrDefault(a => a.ReadOnly__ != null);
+        //    if (cr.ReadOnly__ != @lock)
+        //        throw new Exception("Could not change ContentRestrictions.ReadOnly from " + cr.ReadOnly__ + " to " + @lock + " for: " + fileIdOrLink);
+        //    return f;
+        //}
+
+        public bool? LockFile(string fileIdOrLink, ContentRestriction contentRestriction, bool exceptionOnFail = true)
+        {
+            Google.Apis.Drive.v3.Data.File f = new Google.Apis.Drive.v3.Data.File();
+            f.ContentRestrictions = new List<ContentRestriction> { contentRestriction };
+            FilesResource.UpdateRequest request = Service.Files.Update(f, GetObjectId(fileIdOrLink));
+            request.Fields = "id, webViewLink, contentRestrictions";
+            f = request.Execute();
+            if (f == null)
+                if (exceptionOnFail)
+                    throw new Exception("Remote file does not exist: " + fileIdOrLink);
+                else
+                    return false;
+            if (f.ContentRestrictions == null)
+            {
+                if (contentRestriction.ReadOnly__ != true)
+                    return true;
+                if (exceptionOnFail)
+                    throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
+                return false;
+            }
+            var cr = f.ContentRestrictions.Any(a => a.ReadOnly__ == true);
+            if (contentRestriction.ReadOnly__ == true)
+            {
+                if (!cr)
+                    if (exceptionOnFail)
+                        throw new Exception("Could not set ContentRestrictions.ReadOnly = " + contentRestriction.ReadOnly__ + " for: " + fileIdOrLink);
+                    else
+                        return false;
+            }
+            else if (cr)
+                if (exceptionOnFail)
+                    throw new Exception("Could not set ContentRestrictions.ReadOnly = " + contentRestriction.ReadOnly__ + " for: " + fileIdOrLink);
+                else
+                    return false;
+            return true;
         }
 
         /// <summary>
@@ -303,7 +416,7 @@ namespace Cliver
             }
         }
 
-        public List<string> RemoveObjects(List<string> objectIdOrLinks)
+        public List<string> RemoveObjects(IEnumerable<string> objectIdOrLinks)
         {
             List<string> errors = new List<string>();
             BatchRequest batchRequest = new BatchRequest(Service);
@@ -323,6 +436,17 @@ namespace Cliver
             }
             batchRequest.ExecuteAsync().Wait();
             return errors;
+        }
+
+        public List<string> RemoveObjects(params string[] objectIdOrLinks)
+        {
+            return RemoveObjects(objectIdOrLinks.ToList());
+        }
+
+        public IEnumerable<Google.Apis.Drive.v3.Data.File> GetChildren(string folderIdOrLink, string fields = "id, webViewLink, mimeType")
+        {
+            foreach (var f in FindObjects(new SearchFilter { ParentId = GetObjectId(folderIdOrLink) }, fields))
+                yield return f;
         }
 
         string getProperFields(string fields)

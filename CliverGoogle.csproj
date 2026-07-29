@@ -8,9 +8,17 @@
 	  <Copyright>Sergiy Stoyan</Copyright>
 	  <Authors>Sergiy Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>5.5.3</Version>
+	  <Version>5.6.0</Version>
 	  <PackageProjectUrl>https://github.com/sergiystoyan/CliverGoogleRoutines</PackageProjectUrl>
-	  <Description>4.12.0 =&gt; 5.4.3
+	  <Description>5.4.3 =&gt; 5.6.0
+- (!) GoogleDrivePath removed;
+- GoogleTrier;
+- GoogleException added;
+- RemoveObjects() enhanced;
+- SearchFilter enhanced;
+- GetChildren() added;
+- UploadFile2Folder() added;
+4.12.0 =&gt; 5.4.3
 - GoogleDrivePath introduced;
 - gmail options enhanced/changed;
 - ExtractObjectIdFromWebLink() improved;
@@ -31,6 +39,10 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<DocumentationFile>c:\Users\serge\Documents\_PROJECTS\CliverRoutines\CliverRoutines.xml</DocumentationFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="GooglePicker.html" />
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CliverRoutines" Version="6.55.0" />
