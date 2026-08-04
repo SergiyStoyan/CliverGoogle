@@ -111,10 +111,13 @@ namespace Cliver
         public class Path
         {
             public string BaseObjectIdOrLink { get; private set; }
+            [Newtonsoft.Json.JsonIgnore]
             public string BaseObjectId { get; private set; }
             public string RelativePath { get; private set; }
+            [Newtonsoft.Json.JsonIgnore]
             public string Key { get; private set; }
-
+            
+            [Newtonsoft.Json.JsonIgnore]
             public const string DirectorySeparatorChar = @"\";
 
             public override string ToString()
@@ -167,6 +170,7 @@ namespace Cliver
                 initialize(ps[0], ps[1]);
             }
 
+            [Newtonsoft.Json.JsonConstructor]
             public Path(string baseObjectIdOrLink, string relativePath)
             {
                 initialize(baseObjectIdOrLink, relativePath);
@@ -380,66 +384,16 @@ namespace Cliver
         //    return UploadFileByPath(localFile, remoteFolderIdOrLink, remoteFileName, contentType, updateExisting, fields);
         //}
 
-        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, Path remotefile, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, Path remoteFile, string contentType = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
-            if (!remotefile.SplitRelativePath(out string remoteRelativeFolderPath, out string fileName)
-                && IsObjectLink(remotefile.BaseObjectIdOrLink)
+            if (!remoteFile.SplitRelativePath(out string remoteRelativeFolderPath, out string remoteFileName)
+                && IsObjectLink(remoteFile.BaseObjectIdOrLink)
                 )
-                return UpdateFile(localFile, remotefile.BaseObjectId, PathRoutines.GetFileName(localFile), contentType, fields);
+                return UpdateFile(localFile, remoteFile.BaseObjectId, PathRoutines.GetFileName(localFile), contentType, fields);
 
-            string folderId = GetFolder(new Path(remotefile.BaseObjectId, remoteRelativeFolderPath), GettingMode.GetLatestExistingOrCreate).Id;
-            
-            if (string.IsNullOrWhiteSpace(fileName))
-                fileName = PathRoutines.GetFileName(localFile);
-            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
-            {
-                Name = fileName,
-                //MimeType = getMimeType(localFile), 
-                //Description=,
-            };
-            using (FileStream fileStream = new FileStream(localFile, FileMode.Open, FileAccess.Read))
-            {
-                if (updateExisting)
-                {
-                    SearchFilter sf = new SearchFilter { IsFolder = false, ParentId = folderId, Name = file.Name };
-                    IEnumerable<Google.Apis.Drive.v3.Data.File> fs = FindObjects(sf, fields);
-                    Google.Apis.Drive.v3.Data.File f = fs.FirstOrDefault();
-                    if (f != null)
-                    {
-                        FilesResource.UpdateMediaUpload updateMediaUpload = Service.Files.Update(file, f.Id, fileStream, contentType != null ? contentType : getMimeType(localFile));
-                        updateMediaUpload.Fields = getProperFields(fields);
-                        Google.Apis.Upload.IUploadProgress uploadProgress = updateMediaUpload.Upload();
-                        if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
-                            throw new Exception("Uploading file failed.", uploadProgress.Exception);
-                        if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
-                            throw new Exception("Uploading file has not been completed.");
-                        return updateMediaUpload.ResponseBody;
-                    }
-                }
-                {
-                    file.Parents = new List<string>
-                    {
-                        folderId
-                    };
-                    FilesResource.CreateMediaUpload createMediaUpload = Service.Files.Create(file, fileStream, contentType != null ? contentType : getMimeType(localFile));
-                    createMediaUpload.Fields = getProperFields(fields);
-                    Google.Apis.Upload.IUploadProgress uploadProgress = createMediaUpload.Upload();
-                    if (uploadProgress.Status == Google.Apis.Upload.UploadStatus.Failed)
-                        throw new Exception("Uploading file failed.", uploadProgress.Exception);
-                    if (uploadProgress.Status != Google.Apis.Upload.UploadStatus.Completed)
-                        throw new Exception("Uploading file has not been completed.");
-                    return createMediaUpload.ResponseBody;
-                }
-            }
-        }
-        static string getMimeType(string fileName)
-        {
-            string mimeType = "application/unknown";
-            string ext = System.IO.Path.GetExtension(fileName).ToLower();
-            Microsoft.Win32.RegistryKey regKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(ext);
-            if (regKey != null && regKey.GetValue("Content Type") != null)
-                mimeType = regKey.GetValue("Content Type").ToString();
-            return mimeType;
+            string remoteFolderId = GetFolder(new Path(remoteFile.BaseObjectId, remoteRelativeFolderPath), GettingMode.GetLatestExistingOrCreate).Id;
+
+            return UploadFile(localFile, remoteFolderId, remoteFileName, contentType, updateExisting, fields);
         }
 
         public Google.Apis.Drive.v3.Data.File DownloadFile(Path remoteFile, string localFile)

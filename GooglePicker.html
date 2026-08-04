@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Authorize Application Folder/File Access</title>
+
+    <script src="https://accounts.google.com/gsi/client" onload="initGisClient()" async defer></script>
+    <script src="https://apis.google.com/js/api.js" onload="initGapiClient()" async defer></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #3c4043;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #1a73e8;
+        }
+
+        p {
+            font-size: 14px;
+            color: #5f6368;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+            .btn:disabled {
+                background-color: #dadce0;
+                cursor: not-allowed;
+            }
+
+        .status {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #aaaeB3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Google Drive Access Required</h1>
+        <p>To view or edit folders/files, please authorize the request.</p>
+        <button id="picker_btn" class="btn" onclick="handleAuthAndOpenPicker()" disabled>Loading Google APIs...</button>
+        <div id="status_msg" class="status">Connecting to Google services...</div>
+    </div>
+
+    <script type="text/javascript">
+
+        const CLIENT_ID = '';
+        const API_KEY = '';
+        const APP_ID = CLIENT_ID.split('-')[0]; // Safe array extraction for Project Number
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+        let accessToken = null;
+        let pickerApiLoaded = false;
+        let gisApiLoaded = false;
+        let tokenClient;
+
+        // 3. Google script executes this directly when the script finishes loading over the network
+        function initGisClient() {
+            console.log("Google Identity Services script recognized natively.");
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (response) => {
+                        if (response.error !== undefined) {
+                            document.getElementById('status_msg').innerText = "Auth Error: " + response.error;
+                            throw response;
+                        }
+                        accessToken = response.access_token;
+                        launchGooglePickerCanvas();
+                    },
+                });
+                gisApiLoaded = true;
+                verifyReadyState();
+            } catch (err) {
+                console.error("GIS runtime parsing error: ", err);
+            }
+        }
+
+        // 4. Google api script executes this directly when the core script processes
+        function initGapiClient() {
+            console.log("Core Google API resource detected.");
+            gapi.load('picker', () => {
+                pickerApiLoaded = true;
+                console.log("Picker sub-module successfully integrated.");
+                verifyReadyState();
+            });
+        }
+
+        function verifyReadyState() {
+            if (pickerApiLoaded && gisApiLoaded) {
+                console.log("All systems online. Activating UI controls.");
+                const btn = document.getElementById('picker_btn');
+                btn.innerText = "Select Target File";
+                btn.disabled = false;
+                document.getElementById('status_msg').innerText = "Ready to connect.";
+            }
+        }
+
+        function handleAuthAndOpenPicker() {
+            if (accessToken === null) {
+                document.getElementById('status_msg').innerText = "Opening secure authentication prompt...";
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                launchGooglePickerCanvas();
+            }
+        }
+
+        //function launchGooglePickerCanvas() {
+        //    document.getElementById('status_msg').innerText = "Opening file browser window...";
+
+        //    const docsView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+        //        .setIncludeFolders(true)
+        //        .setSelectFolderEnabled(true);
+
+        //    const picker = new google.picker.PickerBuilder()
+        //        .enableFeature(google.picker.Feature.NAV_HIDDEN)
+        //        .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+        //        .setDeveloperKey(API_KEY)
+        //        .setAppId(APP_ID)
+        //        .setOAuthToken(accessToken)
+        //        .addView(docsView)
+        //        .setTitle("Hold Ctrl/Shift to select multiple files or folders")
+        //        .setCallback(pickerResponseCallback)
+        //        .build();
+
+        //    picker.setVisible(true);
+        //}
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetFolderIds = urlParams.get('folderIds').split(',');// http://localhost:5000/?folderIds=id1,id2,id3&fileIds=id4,id5,id6
+        const targetFileIds = urlParams.get('fileIds').split(',');
+
+        function launchGooglePickerCanvas() {
+            document.getElementById('status_msg').innerText = "Opening file browser...";
+
+            const fileView = new google.picker.DocsView()
+                .setFileIds(targetFolderIds.concat(targetFileIds).join(','))
+                .setIncludeFolders(true)
+                .setSelectFolderEnabled(true);
+
+            var picker = new google.picker.PickerBuilder()
+                .addView(fileView)
+                .enableFeature(google.picker.Feature.NAV_HIDDEN)        // Hides standard Drive sidebar
+                .enableFeature(google.picker.Feature.MULTISELECT_ENABLED) // Required for Ctrl+Clicking
+                .setDeveloperKey(API_KEY)
+                //.setAppId(APP_ID)
+                .setOAuthToken(accessToken)
+                .setTitle("Please confirm access to the listed folders/files.")
+                .setCallback(pickerCallback)
+                .build();
+
+            picker.setVisible(true);
+        }
+
+        //function pickerCallback(data) {
+        //    const action = data[google.picker.Response.ACTION];
+        //    if (action === google.picker.Action.PICKED) {
+        //        const docArray = data[google.picker.Response.DOCUMENTS];
+        //        const selectedFile = docArray[0];
+        //        const fileId = selectedFile[google.picker.Document.ID];
+        //        const fileName = selectedFile[google.picker.Document.NAME];
+
+        //        document.getElementById('status_msg').innerText = `Transmitting verification for '${fileName}'...`;
+        //        window.location.href = `${CSHARP_LOOPBACK_URL}?fileId=${encodeURIComponent(fileId)}&token=${encodeURIComponent(accessToken)}`;
+        //    }
+        //    else if (action === google.picker.Action.CANCEL) {
+        //        document.getElementById('status_msg').innerText = "Selection canceled by user.";
+        //    }
+        //}
+
+        function pickerCallback(data) {
+            const action = data[google.picker.Response.ACTION];
+            if (action === google.picker.Action.PICKED) {
+                //data.docs.forEach(doc => console.log("Selected document: ", doc.id));
+                const docArray = data[google.picker.Response.DOCUMENTS];
+                const itemIds = docArray.map(doc => doc[google.picker.Document.ID]);
+
+                console.log("Selected item IDs: ", itemIds);
+
+                const missingItems = targetFolderIds.concat(targetFileIds).filter(id => !itemIds.includes(id));
+                if (missingItems.length > 0) {
+                    alert(`Requested item ID(s) has not been authorized: ` + missingItems.join(',') + '\r\nPlease try again.');
+                    launchGooglePickerCanvas();
+                    return;
+                }
+
+                document.getElementById('status_msg').innerText = `Transmitting verification for ${docArray.length} items...`;
+                window.location.href = window.location.origin + `?itemIds=${encodeURIComponent(itemIds.join(','))}&token=${encodeURIComponent(accessToken)}`;
+            }
+            else if (action === google.picker.Action.CANCEL) {
+                document.getElementById('status_msg').innerText = "Selection canceled by user.";
+            }
+        }
+
+    </script>
+</body>
+</html>
+
