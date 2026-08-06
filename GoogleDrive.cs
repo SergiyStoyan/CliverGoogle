@@ -274,32 +274,49 @@ namespace Cliver
             }
         }
 
-        //public Google.Apis.Drive.v3.Data.File LockFile(string fileIdOrLink, bool @lock)
-        //{
-        //    //Google.Apis.Drive.v3.Data.File f = GetObject(fileIdOrLink, "id, webViewLink, contentRestrictions");
-        //    //if (f == null)
-        //    //    throw new Exception("Remote file does not exist: " + fileIdOrLink);
-        //    //if (f.ContentRestrictions == null)
-        //    //    throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
-        //    //if (f.ContentRestrictions.FirstOrDefault(a => a.ReadOnly__ == @lock) != null)
-        //    //    return f;
-        //    Google.Apis.Drive.v3.Data.File f = new Google.Apis.Drive.v3.Data.File();
-        //    f.ContentRestrictions.Add(new ContentRestriction { ReadOnly__ = @lock,  });
+        public bool IsLocked(string fileIdOrLink)
+        {
+            var f = GetObject(fileIdOrLink, "id, webViewLink, contentRestrictions");
+            if (f.ContentRestrictions == null)
+                return false;
+            return f.ContentRestrictions.Any(a => a.ReadOnly__ == true);
+        }
 
-        //    FilesResource.UpdateRequest request = Service.Files.Update(f, GetObjectId(fileIdOrLink));
-        //    request.Fields = "id, webViewLink, contentRestrictions";
-        //    f = request.Execute();
-        //    if (f == null)
-        //        throw new Exception("Remote file does not exist: " + fileIdOrLink);
-        //    if (f.ContentRestrictions == null)
-        //        throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
-        //    var cr = f.ContentRestrictions.FirstOrDefault(a => a.ReadOnly__ != null);
-        //    if (cr.ReadOnly__ != @lock)
-        //        throw new Exception("Could not change ContentRestrictions.ReadOnly from " + cr.ReadOnly__ + " to " + @lock + " for: " + fileIdOrLink);
-        //    return f;
-        //}
+        public bool LockFile(string fileIdOrLink, string reason, bool? ownerRestricted, bool exceptionOnFail = true)
+        {
+            var contentRestriction = new ContentRestriction { ReadOnly__ = true, Reason = reason, OwnerRestricted = ownerRestricted };
+            var f = SetContentRestriction(fileIdOrLink, contentRestriction);
+            if (f.ContentRestrictions == null)
+            {
+                if (exceptionOnFail)
+                    throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
+                return false;
+            }
+            var cr = f.ContentRestrictions.Any(a => a.ReadOnly__ == true);
+            if (!cr)
+                if (exceptionOnFail)
+                    throw new Exception("Could not set ContentRestrictions.ReadOnly = " + contentRestriction.ReadOnly__ + " for: " + fileIdOrLink);
+                else
+                    return false;
+            return true;
+        }
 
-        public bool LockFile(string fileIdOrLink, ContentRestriction contentRestriction, bool exceptionOnFail = true)
+        public bool UnlockFile(string fileIdOrLink, bool exceptionOnFail = true)
+        {
+            var contentRestriction = new ContentRestriction { ReadOnly__ = false };
+            var f = SetContentRestriction(fileIdOrLink, contentRestriction);
+            if (f.ContentRestrictions == null)
+                return true;
+            var cr = f.ContentRestrictions.Any(a => a.ReadOnly__ == true);
+            if (cr)
+                if (exceptionOnFail)
+                    throw new Exception("Could not set ContentRestrictions.ReadOnly = " + contentRestriction.ReadOnly__ + " for: " + fileIdOrLink);
+                else
+                    return false;
+            return true;
+        }
+
+        public Google.Apis.Drive.v3.Data.File SetContentRestriction(string fileIdOrLink, ContentRestriction contentRestriction)
         {
             if (contentRestriction.ReadOnly__ == null)
                 throw new Exception(nameof(contentRestriction.ReadOnly__) + " must be specified.");
@@ -310,33 +327,8 @@ namespace Cliver
             request.Fields = "id, webViewLink, contentRestrictions";
             f = request.Execute();
             if (f == null)
-                throw new Exception("Remote file does not exist: " + fileIdOrLink);
-            if (f.ContentRestrictions == null)
-            {
-                if (contentRestriction.ReadOnly__ != true)
-                    return true;
-                if (exceptionOnFail)
-                    throw new Exception("Remote object do not support ContentRestrictions: " + fileIdOrLink);
-                return false;
-            }
-            var cr = f.ContentRestrictions.Any(a => a.ReadOnly__ == true);
-            if (contentRestriction.ReadOnly__ == true)
-            {
-                if (!cr)
-                    if (exceptionOnFail)
-                        throw new Exception("Could not set ContentRestrictions.ReadOnly = " + contentRestriction.ReadOnly__ + " for: " + fileIdOrLink);
-                    else
-                        return false;
-            }
-            else if (contentRestriction.ReadOnly__ == false)
-            {
-                if (cr)
-                    if (exceptionOnFail)
-                        throw new Exception("Could not set ContentRestrictions.ReadOnly = " + contentRestriction.ReadOnly__ + " for: " + fileIdOrLink);
-                    else
-                        return false;
-            }
-            return true;
+                throw new Exception("Remote object does not exist: " + fileIdOrLink);
+            return f;
         }
 
         /// <summary>
@@ -419,7 +411,7 @@ namespace Cliver
             }
         }
 
-        public List<string> RemoveObjects(IEnumerable<string> objectIdOrLinks)
+        public List<string> RemoveObjects(IEnumerable<string> objectIdOrLinks, bool deletePermanently = false)
         {
             List<string> errors = new List<string>();
             BatchRequest batchRequest = new BatchRequest(Service);
@@ -428,27 +420,53 @@ namespace Cliver
                 if (error != null)
                     errors.Add("FileId=" + content?.Id + ", index=" + index + " : " + error.ToStringByJson());
             }
-            Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+            IClientServiceRequest request = null;
+            if (deletePermanently)
             {
-                Trashed = true
-            };
-            foreach (string objectIdOrLink in objectIdOrLinks)
-            {
-                FilesResource.UpdateRequest updateRequest = Service.Files.Update(file, GetObjectId(objectIdOrLink));
-                batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(updateRequest, callback);
+                foreach (string objectIdOrLink in objectIdOrLinks)
+                {
+                    request = Service.Files.Delete(GetObjectId(objectIdOrLink));
+                }
             }
+            else
+            {
+                Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+                {
+                    Trashed = true
+                };
+                foreach (string objectIdOrLink in objectIdOrLinks)
+                {
+                    request = Service.Files.Update(file, GetObjectId(objectIdOrLink));
+                }
+            }
+            batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(request, callback);
             batchRequest.ExecuteAsync().Wait();
             return errors;
         }
 
-        public List<string> RemoveObjects(params string[] objectIdOrLinks)
+        public List<string> TrashObjects(params string[] objectIdOrLinks)
         {
-            return RemoveObjects(objectIdOrLinks.ToList());
+            return RemoveObjects(objectIdOrLinks, false);
         }
 
-        public IEnumerable<Google.Apis.Drive.v3.Data.File> GetChildren(string folderIdOrLink, string fields = "id, webViewLink, mimeType")
+        public List<string> TrashObjects(IEnumerable<string> objectIdOrLinks)
         {
-            foreach (var f in FindObjects(new SearchFilter { ParentId = GetObjectId(folderIdOrLink) }, fields))
+            return RemoveObjects(objectIdOrLinks, false);
+        }
+
+        public List<string> DeleteObjects(params string[] objectIdOrLinks)
+        {
+            return RemoveObjects(objectIdOrLinks, true);
+        }
+
+        public List<string> DeleteObjects(IEnumerable<string> objectIdOrLinks)
+        {
+            return RemoveObjects(objectIdOrLinks, true);
+        }
+
+        public IEnumerable<Google.Apis.Drive.v3.Data.File> GetChildren(string folderIdOrLink, string fields = "id, webViewLink, mimeType", int pageSize = 1000)
+        {
+            foreach (var f in FindObjects(new SearchFilter { ParentId = GetObjectId(folderIdOrLink) }, fields, pageSize))
                 yield return f;
         }
 

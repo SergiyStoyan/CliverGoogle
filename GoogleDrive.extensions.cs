@@ -23,9 +23,18 @@ namespace Cliver
     {
         static public bool IsFolder(this Google.Apis.Drive.v3.Data.File file)
         {
-            if (file.MimeType == null) 
-                throw new Exception("File.MimeType is not set.");
+            if (file.MimeType == null)
+                throw new Exception(nameof(file.MimeType) + " is not set.");
             return file.MimeType == GoogleDrive.FolderMimeType;
         }
+
+        //static public bool IsLocked(this Google.Apis.Drive.v3.Data.File file) !!!dangerous because:
+        //- file.ContentRestrictions == null when unlocked;
+        //- file can be aged;
+        //{
+        //    if (file.ContentRestrictions == null)
+        //        throw new Exception(nameof(file.ContentRestrictions) + " is not set.");
+        //    return file.ContentRestrictions.Any(a => a.ReadOnly__ == true);
+        //}
     }
 }

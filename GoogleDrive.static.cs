@@ -37,5 +37,26 @@ namespace Cliver
         {
             return Regex.IsMatch(v.Trim(), @"^\s*https?\://(docs|drive)\.google\.com/", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
+
+        /// <summary>
+        /// Ensures: id, webViewLink.
+        /// Removes duplicates. (The server tolerates duplicates though.)
+        /// </summary>
+        /// <param name="fields"></param>
+        /// <param name="mustFields"></param>
+        /// <returns></returns>
+        public static string GetNormalizedRequestFields(string fields, string mustFields = "id, webViewLink")
+        {
+            if (fields == null)
+                fields = "";
+            //if (fields.StartsWith(",,"))//normalized
+            //    return fields;
+            var fs = new HashSet<string>(fields.Split(',').Select(a => a.Trim()));
+            mustFields.Split(',').ForEach(f => fs.Add(f.Trim()));
+            //fs.Add("id");
+            //fs.Add("webViewLink");
+            //return ",," + string.Join(",", fs);
+            return string.Join(",", fs);
+        }
     }
 }
