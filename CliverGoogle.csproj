@@ -8,9 +8,15 @@
 	  <Copyright>Sergiy Stoyan</Copyright>
 	  <Authors>Sergiy Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>5.7.0</Version>
+	  <Version>5.7.1</Version>
 	  <PackageProjectUrl>https://github.com/sergiystoyan/CliverGoogleRoutines</PackageProjectUrl>
-	  <Description>5.4.3 =&gt; 5.6.0
+	  <Description>5.6.0 =&gt; 5.7.0
+- LockFile() changed;
+- UnlockFile() added;
+- RemoveObjects() updated;
+- TrashObjects(); DeleteObjects(), IsLocked(), GetNormalizedRequestFields() added;
+
+5.4.3 =&gt; 5.6.0
 - (!) GoogleDrivePath removed;
 - GoogleTrier;
 - GoogleException added;

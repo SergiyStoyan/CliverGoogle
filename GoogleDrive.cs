@@ -472,7 +472,15 @@ namespace Cliver
 
         string getProperFields(string fields)
         {
-            return fields + (Regex.IsMatch(fields, @"(^|\s|,)id($|\s|,)", RegexOptions.IgnoreCase) ? "" : ", id");
+            void add(string f)
+            {
+                if (!Regex.IsMatch(fields, @"(^|,)\s*id\s*($|,)"))
+                    fields += ", " + f;
+            }
+            //return fields + (Regex.IsMatch(fields, @"(^|\s|,)id($|\s|,)", RegexOptions.IgnoreCase) ? "" : ", id");
+            add("id");
+            //add("webViewLink");
+            return fields;
         }
 
         public Google.Apis.Drive.v3.Data.File RenameObject(string objectIdOrLink, string name2)

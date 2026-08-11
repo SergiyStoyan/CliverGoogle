@@ -51,7 +51,7 @@ namespace Cliver
                 fields = "";
             //if (fields.StartsWith(",,"))//normalized
             //    return fields;
-            var fs = new HashSet<string>(fields.Split(',').Select(a => a.Trim()));
+            var fs = new HashSet<string>(fields.Split(',').Select(a => a.Trim()).Where(a => !string.IsNullOrEmpty(a)));
             mustFields.Split(',').ForEach(f => fs.Add(f.Trim()));
             //fs.Add("id");
             //fs.Add("webViewLink");

@@ -46,12 +46,14 @@ namespace Cliver
                 retriableHttpCodes.AddRange(additionalRetriableHttpCodes);
             if (logMessage != null)
                 Log.Inform(logMessage);
-            T o = SleepRoutines.WaitForObject(
+            T o = null;
+            bool r = SleepRoutines.WaitForCondition(
                 () =>
                 {
                     try
                     {
-                        return function();
+                        o = function();
+                        return true;
                     }
                     catch (Exception e)
                     {
@@ -59,14 +61,14 @@ namespace Cliver
                             if (e is Google.GoogleApiException ex && retriableHttpCodes.Contains(ex.HttpStatusCode))
                             {
                                 Log.Warning2("Retrying...\r\n" + logMessage, e);
-                                return null;
+                                return false;
                             }
                         throw;
                     }
                 },
                 0, retryDelayMss, false, maxTryNumber
             );
-            if (o == null)
+            if (!r)
             {
                 string m = logMessage != null ? Regex.Replace(logMessage, @"\.\.\.", "") : nameof(GoogleTrier) + "." + nameof(Run) + "()";
                 throw new Exception2("Failed: " + m);
