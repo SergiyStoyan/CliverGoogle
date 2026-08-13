@@ -8,9 +8,15 @@
 	  <Copyright>Sergiy Stoyan</Copyright>
 	  <Authors>Sergiy Stoyan</Authors>
 	  <Company>CliverSoft</Company>
-	  <Version>5.7.1</Version>
+	  <Version>6.0.0</Version>
 	  <PackageProjectUrl>https://github.com/sergiystoyan/CliverGoogleRoutines</PackageProjectUrl>
-	  <Description>5.6.0 =&gt; 5.7.0
+	  <Description>5.7.0 =&gt; 6.0.0
+- GetNormalizedRequestFields() added;
+- Path2ObjectCache.Cache added;
+- CopyFile(), MoveFile(), UpdateFile2() added;
+- MoveObject(), UpdateFile() changed;
+
+5.6.0 =&gt; 5.7.0
 - LockFile() changed;
 - UnlockFile() added;
 - RemoveObjects() updated;
