@@ -345,7 +345,7 @@ namespace Cliver
             else
                 remoteFolderPath = new Path(remoteFile.BaseObjectId, null);
             string remoteFolderId = GetFolder(remoteFolderPath, GettingMode.GetLatestExistingOrCreate).Id;
-            return UploadFile(localFile, remoteFolderId, remoteFileName, updateExisting, fields);
+            return UploadFile2Folder(localFile, remoteFolderId, remoteFileName, updateExisting, fields);
         }
 
         public Google.Apis.Drive.v3.Data.File DownloadFile(Path remoteFile, string localFile, bool updateExisting = true)
@@ -373,6 +373,31 @@ namespace Cliver
                 folderPath2 = new Path(file2.BaseObjectId, null);
             string folderId2 = GetFolder(folderPath2, GettingMode.GetLatestExistingOrCreate).Id;
             return MoveObject(fileIdOrLink1, folderId2, fileName2, updateExisting, fields);
+        }
+
+        public string DownloadFile2Folder(Path remoteFile, string localFolder, string localFileName = null, bool updateExisting = true)
+        {
+            return DownloadFile2Folder(GetFile(remoteFile).Id, localFolder, localFileName, updateExisting);
+        }
+
+        public List<string> TrashObjects(params Path[] objects)
+        {
+            return RemoveObjects(objects.Select(a => getObject(a)?.Id).Where(a => a != null), false);
+        }
+
+        public List<string> TrashObjects(IEnumerable<Path> objects)
+        {
+            return RemoveObjects(objects.Select(a => getObject(a)?.Id).Where(a => a != null), false);
+        }
+
+        public List<string> DeleteObjects(params Path[] objects)
+        {
+            return RemoveObjects(objects.Select(a => getObject(a)?.Id).Where(a => a != null), true);
+        }
+
+        public List<string> DeleteObjects(IEnumerable<Path> objects)
+        {
+            return RemoveObjects(objects.Select(a => getObject(a)?.Id).Where(a => a != null), true);
         }
     }
 }

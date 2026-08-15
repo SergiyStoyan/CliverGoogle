@@ -207,7 +207,7 @@ namespace Cliver
             return localFile;
         }
 
-        public Google.Apis.Drive.v3.Data.File UploadFile(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, bool updateExisting = true, string fields = "id, webViewLink")
+        public Google.Apis.Drive.v3.Data.File UploadFile2Folder(string localFile, string remoteFolderIdOrLink, string remoteFileName = null, bool updateExisting = true, string fields = "id, webViewLink")
         {
             if (string.IsNullOrWhiteSpace(remoteFileName))
                 remoteFileName = PathRoutines.GetFileName(localFile);
@@ -258,11 +258,6 @@ namespace Cliver
             string ext = System.IO.Path.GetExtension(fileName).ToLower();
             Microsoft.Win32.RegistryKey regKey = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(ext);
             return regKey?.GetValue("Content Type")?.ToString();
-        }
-
-        public Google.Apis.Drive.v3.Data.File UploadFile2Folder(string localFile, string remoteFolderLinkOrId, bool updateExisting = true, string fields = "id, webViewLink")
-        {
-            return UploadFile(localFile, remoteFolderLinkOrId, null, updateExisting, fields);
         }
 
         public Google.Apis.Drive.v3.Data.File UpdateFile(string localFile, string remoteFileIdOrLink, string fileName2 = null, string fields = "id, webViewLink")
@@ -461,6 +456,8 @@ namespace Cliver
         public List<string> RemoveObjects(IEnumerable<string> objectIdOrLinks, bool deletePermanently = false)
         {
             List<string> errors = new List<string>();
+            if (!objectIdOrLinks.Any())//otherwise throws an exception
+                return errors;
             BatchRequest batchRequest = new BatchRequest(Service);
             void callback(Google.Apis.Drive.v3.Data.File content, RequestError error, int index, HttpResponseMessage message)
             {
