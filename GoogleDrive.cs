@@ -153,14 +153,9 @@ namespace Cliver
 
         public void DownloadFile(string fileIdOrLink, string localFile, bool updateExisting = true)
         {
-            string tempLocalFile;
-            if (System.IO.File.Exists(localFile))
-                if (updateExisting)
-                    tempLocalFile = PathRoutines.InsertSuffixBeforeFileExtension(localFile, "_downloading_" + DateTime.Now.Ticks, false);
-                else
-                    throw new Exception2(nameof(updateExisting) + " = FALSE. Cannot update the file: " + localFile);
-            else
-                tempLocalFile = localFile;
+            if (!updateExisting && System.IO.File.Exists(localFile))
+                throw new Exception2(nameof(updateExisting) + " = FALSE. Cannot update the file: " + localFile);
+            string tempLocalFile = PathRoutines.InsertSuffixBeforeFileExtension(localFile, "_downloading_" + DateTime.Now.Ticks, false);
 
             FilesResource.GetRequest request = Service.Files.Get(GetObjectId(fileIdOrLink));
             using (MemoryStream ms = new MemoryStream())
@@ -177,8 +172,7 @@ namespace Cliver
                     throw new Exception(Log.GetThisMethodName() + " got status " + progress.Status);
             }
 
-            if (tempLocalFile != localFile)
-                FileSystemRoutines.MoveFile(tempLocalFile, localFile);
+            FileSystemRoutines.MoveFile(tempLocalFile, localFile);
         }
 
         public string DownloadFile2Folder(string fileIdOrLink, string localFolder, string localFileName = null, bool updateExisting = true)
@@ -193,17 +187,7 @@ namespace Cliver
                 localFileName = PathRoutines.GetLegalizedFileName(f.Name);
             }
             string localFile = localFolder + System.IO.Path.DirectorySeparatorChar + localFileName;
-            string tempLocalFile;
-            if (System.IO.File.Exists(localFile))
-                if (updateExisting)
-                    tempLocalFile = PathRoutines.InsertSuffixBeforeFileExtension(localFile, "_downloading_" + DateTime.Now.Ticks, false);
-                else
-                    throw new Exception2(nameof(updateExisting) + " = FALSE. Cannot update the file: " + localFile);
-            else
-                tempLocalFile = localFile;
-            DownloadFile(fileIdOrLink, tempLocalFile);
-            if (tempLocalFile != localFile)
-                FileSystemRoutines.MoveFile(tempLocalFile, localFile);
+            DownloadFile(fileIdOrLink, localFile);
             return localFile;
         }
 
@@ -464,26 +448,26 @@ namespace Cliver
                 if (error != null)
                     errors.Add("FileId=" + content?.Id + ", index=" + index + " : " + error.ToStringByJson());
             }
-            IClientServiceRequest request = null;
             if (deletePermanently)
             {
                 foreach (string objectIdOrLink in objectIdOrLinks)
                 {
-                    request = Service.Files.Delete(GetObjectId(objectIdOrLink));
+                    IClientServiceRequest request = Service.Files.Delete(GetObjectId(objectIdOrLink));
+                    batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(request, callback);
                 }
             }
             else
             {
-                Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
-                {
-                    Trashed = true
-                };
                 foreach (string objectIdOrLink in objectIdOrLinks)
                 {
-                    request = Service.Files.Update(file, GetObjectId(objectIdOrLink));
+                    Google.Apis.Drive.v3.Data.File file = new Google.Apis.Drive.v3.Data.File
+                    {
+                        Trashed = true
+                    };
+                    IClientServiceRequest request = Service.Files.Update(file, GetObjectId(objectIdOrLink));
+                    batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(request, callback);
                 }
             }
-            batchRequest.Queue<Google.Apis.Drive.v3.Data.File>(request, callback);
             batchRequest.ExecuteAsync().Wait();
             return errors;
         }
