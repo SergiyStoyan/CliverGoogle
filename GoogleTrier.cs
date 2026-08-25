@@ -13,106 +13,143 @@ namespace Cliver
     /// <summary>
     /// Trier base class adapted for Google API
     /// </summary>
-    public class GoogleTrier
+    public class GoogleTrier : Trier
     {
-        virtual public List<System.Net.HttpStatusCode> RetriableHttpCodes { get; } = new List<System.Net.HttpStatusCode> {
+        virtual public HashSet<System.Net.HttpStatusCode> RetriableHttpCodes { get; } = new HashSet<System.Net.HttpStatusCode> {
             System.Net.HttpStatusCode.InternalServerError,
             System.Net.HttpStatusCode.Gone,
             System.Net.HttpStatusCode.BadRequest,
         };
 
-        virtual public int DefaultTryMaxNumber { get; } = 3;
-        virtual public int DefaultRetryDelayMss { get; } = 10000;
-
-        /// <summary>
-        /// Trier adapted for google API requests. Can be used as a framework.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="logMessage"></param>
-        /// <param name="function"></param>
-        /// <param name="maxTryNumber"></param>
-        /// <param name="retryDelayMss"></param>
-        /// <param name="additionalRetriableHttpCodes"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception2"></exception>
-        virtual public T Run<T>(string logMessage, Func<T> function, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+        protected override bool retryOnException(Exception e)
         {
-            if (maxTryNumber < 0)
-                maxTryNumber = DefaultTryMaxNumber;
-            if (retryDelayMss < 0)
-                retryDelayMss = DefaultRetryDelayMss;
-            List<System.Net.HttpStatusCode> retriableHttpCodes = RetriableHttpCodes;
-            if (additionalRetriableHttpCodes != null)
-                retriableHttpCodes.AddRange(additionalRetriableHttpCodes);
-            if (logMessage != null)
-                Log.Inform(logMessage);
-            T o = null;
-            bool r = SleepRoutines.WaitForCondition(
-                () =>
+            for (; e != null; e = e.InnerException)
+                if (e is Google.GoogleApiException ex && RetriableHttpCodes.Contains(ex.HttpStatusCode))
                 {
-                    try
-                    {
-                        o = function();
-                        return true;
-                    }
-                    catch (Exception e)
-                    {
-                        for (; e != null; e = e.InnerException)
-                            if (e is Google.GoogleApiException ex && retriableHttpCodes.Contains(ex.HttpStatusCode))
-                            {
-                                Log.Warning2("Retrying...\r\n" + logMessage, e);
-                                return false;
-                            }
-                        throw;
-                    }
-                },
-                0, retryDelayMss, false, maxTryNumber
-            );
-            if (!r)
+                    Log.Warning2("Retrying...\r\n" + Message, e);
+                    return true;
+                }
+            return false;
+        }
+
+        protected override void onStart()
+        {
+            Log.Inform(Message);
+        }
+
+        protected override void onEnd()
+        {
+            if (!Success && ExceptionOnUnsuccess)
             {
-                string m = logMessage != null ? Regex.Replace(logMessage, @"\.\.\.", "") : nameof(GoogleTrier) + "." + nameof(Run) + "()";
+                string m = Message != null ? Regex.Replace(Message, @"\.\.\.", "") : nameof(GoogleTrier) + "." + nameof(Run) + "()";
                 throw new Exception2("Failed: " + m);
             }
-            return o;
-        }
-
-        /// <summary>
-        /// Trier adapted for google API requests. Can be used as a framework.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="function"></param>
-        /// <param name="maxTryNumber"></param>
-        /// <param name="retryDelayMss"></param>
-        /// <param name="additionalRetriableHttpCodes"></param>
-        /// <returns></returns>
-        virtual public T Run<T>(Func<T> function, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
-        {
-            return Run(null, function, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
-        }
-
-        /// <summary>
-        /// Trier adapted for google API requests. Can be used as a framework.
-        /// </summary>
-        /// <param name="logMessage"></param>
-        /// <param name="action"></param>
-        /// <param name="maxTryNumber"></param>
-        /// <param name="retryDelayMss"></param>
-        /// <param name="additionalRetriableHttpCodes"></param>
-        virtual public void Run(string logMessage, Action action, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
-        {
-            Run(logMessage, () => { action(); return new Object(); }, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
-        }
-
-        /// <summary>
-        /// Trier adapted for google API requests. Can be used as a framework.
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="maxTryNumber"></param>
-        /// <param name="retryDelayMss"></param>
-        /// <param name="additionalRetriableHttpCodes"></param>
-        virtual public void Run(Action action, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
-        {
-            Run(null, action, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
         }
     }
+
+    //    /// <summary>
+    //    /// Trier base class adapted for Google API
+    //    /// </summary>
+    //    public class GoogleTrier
+    //    {
+    //        virtual public List<System.Net.HttpStatusCode> RetriableHttpCodes { get; } = new List<System.Net.HttpStatusCode> {
+    //            System.Net.HttpStatusCode.InternalServerError,
+    //            System.Net.HttpStatusCode.Gone,
+    //            System.Net.HttpStatusCode.BadRequest,
+    //        };
+
+    //        virtual public int DefaultTryMaxNumber { get; } = 3;
+    //        virtual public int DefaultRetryDelayMss { get; } = 10000;
+
+    //        /// <summary>
+    //        /// Trier adapted for google API requests. Can be used as a framework.
+    //        /// </summary>
+    //        /// <typeparam name="T"></typeparam>
+    //        /// <param name="logMessage"></param>
+    //        /// <param name="function"></param>
+    //        /// <param name="maxTryNumber"></param>
+    //        /// <param name="retryDelayMss"></param>
+    //        /// <param name="additionalRetriableHttpCodes"></param>
+    //        /// <returns></returns>
+    //        /// <exception cref="Exception2"></exception>
+    //        virtual public T Run<T>(string logMessage, Func<T> function, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+    //        {
+    //            if (maxTryNumber < 0)
+    //                maxTryNumber = DefaultTryMaxNumber;
+    //            if (retryDelayMss < 0)
+    //                retryDelayMss = DefaultRetryDelayMss;
+    //            List<System.Net.HttpStatusCode> retriableHttpCodes = RetriableHttpCodes;
+    //            if (additionalRetriableHttpCodes != null)
+    //                retriableHttpCodes.AddRange(additionalRetriableHttpCodes);
+    //            if (logMessage != null)
+    //                Log.Inform(logMessage);
+    //            T o = null;
+    //            bool r = SleepRoutines.WaitForCondition(
+    //                () =>
+    //                {
+    //                    try
+    //                    {
+    //                        o = function();
+    //                        return true;
+    //                    }
+    //                    catch (Exception e)
+    //                    {
+    //                        for (; e != null; e = e.InnerException)
+    //                            if (e is Google.GoogleApiException ex && retriableHttpCodes.Contains(ex.HttpStatusCode))
+    //                            {
+    //                                Log.Warning2("Retrying...\r\n" + logMessage, e);
+    //                                return false;
+    //                            }
+    //                        throw;
+    //                    }
+    //                },
+    //                0, retryDelayMss, false, maxTryNumber
+    //            );
+    //            if (!r)
+    //            {
+    //                string m = logMessage != null ? Regex.Replace(logMessage, @"\.\.\.", "") : nameof(GoogleTrier) + "." + nameof(Run) + "()";
+    //                throw new Exception2("Failed: " + m);
+    //            }
+    //            return o;
+    //        }
+
+    //        /// <summary>
+    //        /// Trier adapted for google API requests. Can be used as a framework.
+    //        /// </summary>
+    //        /// <typeparam name="T"></typeparam>
+    //        /// <param name="function"></param>
+    //        /// <param name="maxTryNumber"></param>
+    //        /// <param name="retryDelayMss"></param>
+    //        /// <param name="additionalRetriableHttpCodes"></param>
+    //        /// <returns></returns>
+    //        virtual public T Run<T>(Func<T> function, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null) where T : class
+    //        {
+    //            return Run(null, function, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
+    //        }
+
+    //        /// <summary>
+    //        /// Trier adapted for google API requests. Can be used as a framework.
+    //        /// </summary>
+    //        /// <param name="logMessage"></param>
+    //        /// <param name="action"></param>
+    //        /// <param name="maxTryNumber"></param>
+    //        /// <param name="retryDelayMss"></param>
+    //        /// <param name="additionalRetriableHttpCodes"></param>
+    //        virtual public void Run(string logMessage, Action action, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+    //        {
+    //            Run(logMessage, () => { action(); return new Object(); }, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
+    //        }
+
+    //        /// <summary>
+    //        /// Trier adapted for google API requests. Can be used as a framework.
+    //        /// </summary>
+    //        /// <param name="action"></param>
+    //        /// <param name="maxTryNumber"></param>
+    //        /// <param name="retryDelayMss"></param>
+    //        /// <param name="additionalRetriableHttpCodes"></param>
+    //        virtual public void Run(Action action, int maxTryNumber = -1, int retryDelayMss = -1, IEnumerable<System.Net.HttpStatusCode> additionalRetriableHttpCodes = null)
+    //        {
+    //            Run(null, action, maxTryNumber, retryDelayMss, additionalRetriableHttpCodes);
+    //        }
+    //    }
 }

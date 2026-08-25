@@ -55,7 +55,7 @@ namespace Cliver
 #endif
             };
             ScriptsResource.RunRequest runRequest = Service.Scripts.Run(request, ScriptId);
-            Operation operation = null;
+            Google.Apis.Script.v1.Data.Operation operation = null;
             for (int tryCount = 1; ; tryCount++)
                 try
                 {
